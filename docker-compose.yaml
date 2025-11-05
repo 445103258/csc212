@@ -1,0 +1,36 @@
+services:
+  # 1. PYTHON API BACKEND SERVICE
+  api:
+    build:
+      context: . # Build context is the root: ./ecommerce/
+      dockerfile: python-api/Dockerfile.fastapi # Use relative path to the Dockerfile
+    # Set the working directory inside the container
+    working_dir: /usr/src/app/python-api 
+    ports:
+      - "8000:8000"
+    environment:
+      PYTHONUNBUFFERED: 1
+    
+  # 2. REACT FRONTEND DASHBOARD SERVICE
+  frontend:
+    build:
+      context: . # Build context is the root: ./ecommerce/
+      dockerfile: shadcn-ui/Dockerfile.frontend # Use relative path to the Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    environment:
+      VITE_API_BASE_URL: http://api:8000
+    # Add a restart policy to keep the service running
+    restart: always 
+
+  # 3. JAVA CORE SYSTEM SERVICE
+  java-core:
+    build:
+      context: . # Build context is the root: ./ecommerce/
+      dockerfile: java-core/Dockerfile.javacore # Use relative path to the Dockerfile
+    # Run the compiled Java application
+    command: java -cp bin com.ecommerce.Main
+    # This service runs in the background and is mainly for data processing/setup
+    restart: on-failure

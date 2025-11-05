@@ -1,0 +1,29 @@
+# Stage 1: Builder using JDK
+FROM openjdk:26-ea-trixie AS java-builder
+
+WORKDIR /usr/src/app
+
+# Copy Java source code
+# Note the path: java-core/src/ (relative to ./ecommerce)
+COPY java-core/src/ ./src/
+
+# Copy the data folder from the Python API project 
+# Note the path: python-api/data/ (relative to ./ecommerce)
+COPY python-api/data/ ./data/
+
+# Create bin directory
+RUN mkdir -p bin
+
+# Compile all Java files
+RUN find src -name "*.java" > sources.txt && javac -d bin -cp bin @sources.txt
+
+# Stage 2: Final Runtime using JRE
+FROM openjdk:26-ea-trixie
+
+WORKDIR /usr/src/app
+
+# Copy the compiled classes and data from the builder stage
+COPY --from=java-builder /usr/src/app/bin ./bin
+COPY --from=java-builder /usr/src/app/data ./data
+
+CMD ["java", "-cp", "bin", "com.ecommerce.Main"]

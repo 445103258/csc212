@@ -19,7 +19,8 @@ public class Main {
         CustomerService customerService = new CustomerService(productService, orderService);
         AnalyticsService analyticsService = new AnalyticsService(productService);
         
-        String dataPath = "../python-api/data/";
+        /* String dataPath = "../python-api/data/"; */
+	String dataPath = "./data/";
         
         System.out.println("Loading data from CSV files...\n");
         CSVReader.loadProducts(dataPath + "products.csv", productService);
