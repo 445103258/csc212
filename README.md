@@ -141,6 +141,12 @@ pnpm install
 pnpm run dev
 ```
 
+### Using docker-compose
+```bash
+# Build images and run cluster
+docker compose up --build
+```
+
 ## 📊 API Endpoints
 
 ### Products
@@ -204,31 +210,6 @@ See [docs/complexity-analysis.md](docs/complexity-analysis.md) for detailed anal
 - **[Complexity Analysis](docs/complexity-analysis.md)**: Time and space complexity
 - **[Project Report](docs/report.md)**: Complete project documentation
 
-## 🧪 Sample Data
-
-The system includes sample CSV data:
-- 5 products (Laptop, Mouse, Keyboard, USB Hub, Laptop Stand)
-- 4 customers
-- 4 orders with various statuses
-- 7 reviews with ratings 4-5
-
-## 🎓 Academic Context
-
-**Course**: CSC 212 - Data Structures  
-**Semester**: Fall 2025  
-**Due Date**: November 6, 2025
-
-### Project Requirements Met
-✅ Custom data structures (no Java Collections)  
-✅ CSV file reading  
-✅ All CRUD operations  
-✅ Customer reviews with efficient extraction  
-✅ Top 3 products by rating  
-✅ Orders between dates  
-✅ Common high-rated products between customers  
-✅ Complete complexity analysis  
-✅ Class diagrams and documentation  
-
 ## 🔧 Technology Stack
 
 ### Backend
@@ -244,30 +225,3 @@ The system includes sample CSV data:
 - **shadcn-ui**: Component library
 - **Tailwind CSS**: Styling
 - **Vite**: Build tool
-
-## 📝 License
-
-This is an academic project for CSC 212 course.
-
-## 👥 Team
-
-Maximum 3 team members per project as per course requirements.
-
-## 🤝 Contributing
-
-This is an academic project. Collaboration within team members only.
-
-## ⚠️ Academic Integrity
-
-- All data structures implemented from scratch
-- No use of Java Collections Framework
-- Original work with proper documentation
-- Code will be checked for plagiarism
-
-## 📞 Support
-
-For questions or issues, refer to the course materials or contact the teaching team.
-
----
-
-**Built with ❤️ for CSC 212 Fall 2025**
