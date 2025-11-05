@@ -216,7 +216,7 @@ The system includes sample CSV data:
 
 **Course**: CSC 212 - Data Structures  
 **Semester**: Fall 2025  
-**Due Date**: October 30, 2025
+**Due Date**: November 6, 2025
 
 ### Project Requirements Met
 ✅ Custom data structures (no Java Collections)  
