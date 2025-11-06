@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Package, Users, ShoppingCart, Star, TrendingUp, AlertCircle, Search, Edit, Trash2, X, Check, ChevronsUpDown } from 'lucide-react';
+import { Package, Users, ShoppingCart, Star, TrendingUp, AlertCircle, Search, Edit, Trash2, X, Check, ChevronsUpDown, Calendar, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -83,6 +83,16 @@ export default function Dashboard() {
   const [openOrderProductsCombobox, setOpenOrderProductsCombobox] = useState(false);
   const [openReviewProductCombobox, setOpenReviewProductCombobox] = useState(false);
   const [openReviewCustomerCombobox, setOpenReviewCustomerCombobox] = useState(false);
+
+  const [dateRangeFilter, setDateRangeFilter] = useState({ startDate: '', endDate: '' });
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [showDateFilterDialog, setShowDateFilterDialog] = useState(false);
+
+  const [commonProductsFilter, setCommonProductsFilter] = useState({ customer1Id: 0, customer2Id: 0 });
+  const [commonProducts, setCommonProducts] = useState<Product[]>([]);
+  const [showCommonProductsDialog, setShowCommonProductsDialog] = useState(false);
+  const [openCustomer1Combobox, setOpenCustomer1Combobox] = useState(false);
+  const [openCustomer2Combobox, setOpenCustomer2Combobox] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -287,6 +297,63 @@ export default function Dashboard() {
     }
   };
 
+  const handleFilterOrdersByDate = () => {
+    if (!dateRangeFilter.startDate || !dateRangeFilter.endDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+
+    const startDate = new Date(dateRangeFilter.startDate);
+    const endDate = new Date(dateRangeFilter.endDate);
+    
+    if (startDate > endDate) {
+      toast.error('Start date must be before end date');
+      return;
+    }
+
+    const filtered = orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      return orderDate >= startDate && orderDate <= endDate;
+    });
+
+    setFilteredOrders(filtered);
+    setShowDateFilterDialog(true);
+    toast.success(`Found ${filtered.length} order(s) between ${dateRangeFilter.startDate} and ${dateRangeFilter.endDate}`);
+  };
+
+  const handleFindCommonProducts = async () => {
+    if (!commonProductsFilter.customer1Id || !commonProductsFilter.customer2Id) {
+      toast.error('Please select both customers');
+      return;
+    }
+
+    if (commonProductsFilter.customer1Id === commonProductsFilter.customer2Id) {
+      toast.error('Please select two different customers');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/analytics/common-products?customer_id1=${commonProductsFilter.customer1Id}&customer_id2=${commonProductsFilter.customer2Id}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCommonProducts(data);
+        setShowCommonProductsDialog(true);
+        
+        const customer1 = customers.find(c => c.customerId === commonProductsFilter.customer1Id);
+        const customer2 = customers.find(c => c.customerId === commonProductsFilter.customer2Id);
+        
+        toast.success(`Found ${data.length} common high-rated product(s) between ${customer1?.name} and ${customer2?.name}`);
+      } else {
+        toast.error('Failed to fetch common products');
+      }
+    } catch (error) {
+      toast.error('Failed to fetch common products');
+    }
+  };
+
   const handleAddReview = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/reviews`, {
@@ -439,6 +506,146 @@ export default function Dashboard() {
           </Card>
         )}
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="border-t-4 border-t-purple-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Filter Orders by Date Range
+              </CardTitle>
+              <CardDescription>View orders placed between two dates</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Start Date</Label>
+                  <Input
+                    type="date"
+                    value={dateRangeFilter.startDate}
+                    onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, startDate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>End Date</Label>
+                  <Input
+                    type="date"
+                    value={dateRangeFilter.endDate}
+                    onChange={(e) => setDateRangeFilter({ ...dateRangeFilter, endDate: e.target.value })}
+                  />
+                </div>
+              </div>
+              <Button onClick={handleFilterOrdersByDate} className="w-full">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter Orders
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-t-4 border-t-indigo-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="h-5 w-5" />
+                Common High-Rated Products
+              </CardTitle>
+              <CardDescription>Find products reviewed by two customers with rating &gt; 4</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Customer 1</Label>
+                <Popover open={openCustomer1Combobox} onOpenChange={setOpenCustomer1Combobox}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {commonProductsFilter.customer1Id ? 
+                        customers.find(c => c.customerId === commonProductsFilter.customer1Id)?.name || "Select customer..." 
+                        : "Select customer..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search customer..." />
+                      <CommandList>
+                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandGroup>
+                          {customers.map((customer) => (
+                            <CommandItem
+                              key={customer.customerId}
+                              value={`${customer.customerId} ${customer.name}`}
+                              onSelect={() => {
+                                setCommonProductsFilter({ ...commonProductsFilter, customer1Id: customer.customerId });
+                                setOpenCustomer1Combobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  commonProductsFilter.customer1Id === customer.customerId ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div>
+                                <div className="font-medium">{customer.name}</div>
+                                <div className="text-sm text-muted-foreground">ID: {customer.customerId} | {customer.email}</div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label>Customer 2</Label>
+                <Popover open={openCustomer2Combobox} onOpenChange={setOpenCustomer2Combobox}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {commonProductsFilter.customer2Id ? 
+                        customers.find(c => c.customerId === commonProductsFilter.customer2Id)?.name || "Select customer..." 
+                        : "Select customer..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search customer..." />
+                      <CommandList>
+                        <CommandEmpty>No customer found.</CommandEmpty>
+                        <CommandGroup>
+                          {customers.map((customer) => (
+                            <CommandItem
+                              key={customer.customerId}
+                              value={`${customer.customerId} ${customer.name}`}
+                              onSelect={() => {
+                                setCommonProductsFilter({ ...commonProductsFilter, customer2Id: customer.customerId });
+                                setOpenCustomer2Combobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  commonProductsFilter.customer2Id === customer.customerId ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div>
+                                <div className="font-medium">{customer.name}</div>
+                                <div className="text-sm text-muted-foreground">ID: {customer.customerId} | {customer.email}</div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button onClick={handleFindCommonProducts} className="w-full">
+                <Search className="mr-2 h-4 w-4" />
+                Find Common Products
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
         <Card className="border-t-4 border-t-indigo-500">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -507,7 +714,7 @@ export default function Dashboard() {
                           <Label>Price</Label>
                           <Input
                             type="number"
-                            step="0.01"
+                            step="1.00"
                             value={newProduct.price}
                             onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                             placeholder="0.00"
@@ -702,14 +909,14 @@ export default function Dashboard() {
                           </Button>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      ))}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="orders" className="space-y-4">
+	  <TabsContent value="orders" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Order Management</CardTitle>
@@ -733,8 +940,8 @@ export default function Dashboard() {
                             <PopoverTrigger asChild>
                               <Button variant="outline" className="w-full justify-between">
                                 {newOrder.customerId ? 
-                                  customers.find(c => c.customerId === newOrder.customerId)?.name || "Select customer..." 
-                                  : "Select customer..."}
+                                customers.find(c => c.customerId === newOrder.customerId)?.name || "Select customer..." 
+                                : "Select customer..."}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                             </PopoverTrigger>
@@ -745,25 +952,25 @@ export default function Dashboard() {
                                   <CommandEmpty>No customer found.</CommandEmpty>
                                   <CommandGroup>
                                     {customers.map((customer) => (
-                                      <CommandItem
-                                        key={customer.customerId}
-                                        value={`${customer.customerId} ${customer.name}`}
-                                        onSelect={() => {
-                                          setNewOrder({ ...newOrder, customerId: customer.customerId });
-                                          setOpenCustomerCombobox(false);
-                                        }}
+                                    <CommandItem
+                                      key={customer.customerId}
+                                      value={`${customer.customerId} ${customer.name}`}
+                                      onSelect={() => {
+                                      setNewOrder({ ...newOrder, customerId: customer.customerId });
+                                      setOpenCustomerCombobox(false);
+                                      }}
                                       >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            newOrder.customerId === customer.customerId ? "opacity-100" : "opacity-0"
-                                          )}
+                                      <Check
+                                        className={cn(
+                                        "mr-2 h-4 w-4",
+                                        newOrder.customerId === customer.customerId ? "opacity-100" : "opacity-0"
+                                        )}
                                         />
-                                        <div>
-                                          <div className="font-medium">{customer.name}</div>
-                                          <div className="text-sm text-muted-foreground">ID: {customer.customerId} | {customer.email}</div>
-                                        </div>
-                                      </CommandItem>
+                                      <div>
+                                        <div className="font-medium">{customer.name}</div>
+                                        <div className="text-sm text-muted-foreground">ID: {customer.customerId} | {customer.email}</div>
+                                      </div>
+                                    </CommandItem>
                                     ))}
                                   </CommandGroup>
                                 </CommandList>
@@ -787,32 +994,32 @@ export default function Dashboard() {
                                   <CommandEmpty>No product found.</CommandEmpty>
                                   <CommandGroup>
                                     {products.filter(p => p.stock > 0).map((product) => (
-                                      <CommandItem
-                                        key={product.productId}
-                                        value={`${product.productId} ${product.name}`}
-                                        onSelect={() => {
-                                          const isSelected = newOrder.productIds.includes(product.productId);
-                                          setNewOrder({
-                                            ...newOrder,
-                                            productIds: isSelected
-                                              ? newOrder.productIds.filter(id => id !== product.productId)
-                                              : [...newOrder.productIds, product.productId]
-                                          });
-                                        }}
+                                    <CommandItem
+                                      key={product.productId}
+                                      value={`${product.productId} ${product.name}`}
+                                      onSelect={() => {
+                                      const isSelected = newOrder.productIds.includes(product.productId);
+                                      setNewOrder({
+                                      ...newOrder,
+                                      productIds: isSelected
+                                      ? newOrder.productIds.filter(id => id !== product.productId)
+                                      : [...newOrder.productIds, product.productId]
+                                      });
+                                      }}
                                       >
-                                        <Check
-                                          className={cn(
-                                            "mr-2 h-4 w-4",
-                                            newOrder.productIds.includes(product.productId) ? "opacity-100" : "opacity-0"
-                                          )}
+                                      <Check
+                                        className={cn(
+                                        "mr-2 h-4 w-4",
+                                        newOrder.productIds.includes(product.productId) ? "opacity-100" : "opacity-0"
+                                        )}
                                         />
-                                        <div>
-                                          <div className="font-medium">{product.name}</div>
-                                          <div className="text-sm text-muted-foreground">
-                                            ID: {product.productId} | ${product.price} | Stock: {product.stock}
-                                          </div>
+                                      <div>
+                                        <div className="font-medium">{product.name}</div>
+                                        <div className="text-sm text-muted-foreground">
+                                          ID: {product.productId} | ${product.price} | Stock: {product.stock}
                                         </div>
-                                      </CommandItem>
+                                      </div>
+                                    </CommandItem>
                                     ))}
                                   </CommandGroup>
                                 </CommandList>
@@ -820,23 +1027,23 @@ export default function Dashboard() {
                             </PopoverContent>
                           </Popover>
                           {newOrder.productIds.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {newOrder.productIds.map(id => {
-                                const product = products.find(p => p.productId === id);
-                                return product ? (
-                                  <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                                    {product.name}
-                                    <X
-                                      className="h-3 w-3 cursor-pointer"
-                                      onClick={() => setNewOrder({
-                                        ...newOrder,
-                                        productIds: newOrder.productIds.filter(pid => pid !== id)
-                                      })}
-                                    />
-                                  </Badge>
-                                ) : null;
-                              })}
-                            </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {newOrder.productIds.map(id => {
+                            const product = products.find(p => p.productId === id);
+                            return product ? (
+                            <Badge key={id} variant="secondary" className="flex items-center gap-1">
+                              {product.name}
+                              <X
+                                className="h-3 w-3 cursor-pointer"
+                                onClick={() => setNewOrder({
+                                ...newOrder,
+                                productIds: newOrder.productIds.filter(pid => pid !== id)
+                                })}
+                                />
+                            </Badge>
+                            ) : null;
+                            })}
+                          </div>
                           )}
                         </div>
                         <Button onClick={handlePlaceOrder} className="w-full" disabled={!newOrder.customerId || newOrder.productIds.length === 0}>
@@ -908,46 +1115,46 @@ export default function Dashboard() {
                   </TableHeader>
                   <TableBody>
                     {orders.map((order) => {
-                      const customer = customers.find(c => c.customerId === order.customerId);
-                      return (
-                        <TableRow key={order.orderId}>
-                          <TableCell>{order.orderId}</TableCell>
-                          <TableCell>{customer?.name || `Customer #${order.customerId}`}</TableCell>
-                          <TableCell>{order.productIds.length} items</TableCell>
-                          <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
-                          <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
-                          <TableCell>{getStatusBadge(order.status)}</TableCell>
-			  <TableCell>
-			    <Select
-			      value={order.status}
-			      onValueChange={(newStatus) => handleUpdateOrderStatus(order.orderId, newStatus)}
-			      >
-			      <SelectTrigger className="w-[120px]">
-				<SelectValue placeholder={order.status} /> 
-			      </SelectTrigger>
-			      <SelectContent>
-				{['Pending', 'Shipped', 'Delivered'].map(status => (
-				<SelectItem key={status} value={status}>
-				  {status}
-				</SelectItem>
-				))}
-			      </SelectContent>
-			    </Select>
-			  </TableCell>
-			  
-                          <TableCell>
-                            {order.status === 'Pending' && (
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleCancelOrder(order.orderId)}
-                              >
-                              Cancel
-                            </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
+                    const customer = customers.find(c => c.customerId === order.customerId);
+                    return (
+                    <TableRow key={order.orderId}>
+                      <TableCell>{order.orderId}</TableCell>
+                      <TableCell>{customer?.name || `Customer #${order.customerId}`}</TableCell>
+                      <TableCell>{order.productIds.length} items</TableCell>
+                      <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
+                      <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+		      <TableCell>
+			<Select
+			  value={order.status}
+			  onValueChange={(newStatus) => handleUpdateOrderStatus(order.orderId, newStatus)}
+			  >
+			  <SelectTrigger className="w-[120px]">
+			    <SelectValue placeholder={order.status} /> 
+			  </SelectTrigger>
+			  <SelectContent>
+			    {['Pending', 'Shipped', 'Delivered'].map(status => (
+			    <SelectItem key={status} value={status}>
+			      {status}
+			    </SelectItem>
+			    ))}
+			  </SelectContent>
+			</Select>
+		      </TableCell>
+		      
+                      <TableCell>
+                        {order.status === 'Pending' && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleCancelOrder(order.orderId)}
+                          >
+                          Cancel
+                        </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                    );
                     })}
                   </TableBody>
                 </Table>
@@ -1269,6 +1476,115 @@ export default function Dashboard() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showDateFilterDialog && (
+        <Dialog open={showDateFilterDialog} onOpenChange={setShowDateFilterDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Orders Between {dateRangeFilter.startDate} and {dateRangeFilter.endDate}</DialogTitle>
+              <DialogDescription>Found {filteredOrders.length} order(s) in this date range</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {filteredOrders.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No orders found in this date range</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Products</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredOrders.map((order) => {
+                      const customer = customers.find(c => c.customerId === order.customerId);
+                      return (
+                        <TableRow key={order.orderId}>
+                          <TableCell>{order.orderId}</TableCell>
+                          <TableCell>{customer?.name || `Customer #${order.customerId}`}</TableCell>
+                          <TableCell>{order.productIds.length} items</TableCell>
+                          <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
+                          <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showCommonProductsDialog && (
+        <Dialog open={showCommonProductsDialog} onOpenChange={setShowCommonProductsDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Common High-Rated Products</DialogTitle>
+              <DialogDescription>
+                Products reviewed by both {customers.find(c => c.customerId === commonProductsFilter.customer1Id)?.name} and {customers.find(c => c.customerId === commonProductsFilter.customer2Id)?.name} with average rating &gt; 4.0
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {commonProducts.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No common high-rated products found</p>
+              ) : (
+                <div className="space-y-4">
+                  {commonProducts.map((product) => (
+                    <Card key={product.productId} className="border-l-4 border-l-green-500">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg">{product.name}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                            <span className="font-bold text-lg">{product.averageRating.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <CardDescription>
+                          Product ID: {product.productId} | Price: ${product.price.toFixed(2)} | Stock: {product.stock}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium">Reviews from selected customers:</p>
+                          {product.reviews
+                            .filter(r => r.customerId === commonProductsFilter.customer1Id || r.customerId === commonProductsFilter.customer2Id)
+                            .map((review) => {
+                              const customer = customers.find(c => c.customerId === review.customerId);
+                              return (
+                                <div key={review.reviewId} className="p-3 bg-slate-50 rounded-lg">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <span className="font-medium text-sm">{customer?.name}</span>
+                                    <div className="flex items-center gap-1">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`h-3 w-3 ${
+                                            i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'
+                                          }`}
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-slate-600">{review.comment}</p>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
               )}
             </div>
           </DialogContent>
