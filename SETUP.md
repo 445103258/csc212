@@ -28,10 +28,10 @@ Before you begin, ensure you have the following installed:
 ecommerce-system/
 ├── java-core/          # Java core business logic
 ├── python-api/         # Python FastAPI backend
-├── docs/              # Documentation
+├── shadcn-ui/          # React TypeScript frontend
+├── docs/               # Documentation
+├── SETUP.md            # Setup Guide (<- you're at)
 └── README.md
-
-shadcn-ui/             # React TypeScript frontend
 ```
 
 ## Step-by-Step Setup
@@ -103,7 +103,7 @@ INFO:     Application startup complete.
 - Health Check: http://localhost:8000/api/v1/health
 
 **Troubleshooting:**
-- If port 8000 is in use, change the port: `--port 8001`
+- If port 8000 is in use, change the port: `--port 8001` -and remember to change it in the frontend too-
 - Make sure CSV files exist in the `data/` directory
 - Check Python version: `python --version` (should be 3.8+)
 
@@ -136,28 +136,15 @@ pnpm run dev
 
 **Troubleshooting:**
 - If port 5173 is in use, Vite will automatically use the next available port
-- Make sure Python API is running on port 8000
-- Check for CORS errors in browser console
+- Make sure Python API is running on port 8000 (or whatever you changed it to)
+- Check for CORS errors or Mixed Content(using HTTPS) in browser console
 
 ## Running All Components Together
 
 ### Terminal 1 - Python API
 ```bash
-cd ecommerce-system/python-api
-source venv/bin/activate  # or venv\Scripts\activate on Windows
-uvicorn app.main:app --reload --port 8000
-```
-
-### Terminal 2 - Frontend
-```bash
-cd shadcn-ui
-pnpm run dev
-```
-
-### Terminal 3 - Java Core (Optional)
-```bash
-cd ecommerce-system/java-core
-java -cp bin com.ecommerce.Main
+# in ./ecommerce/docker-compose.yaml
+docker compose up --build
 ```
 
 ## Testing the System
@@ -253,35 +240,6 @@ Edit files in `python-api/data/`:
 
 **Note:** Restart Python API after CSV changes to reload data.
 
-## Production Deployment
-
-### Java Core
-```bash
-# Create JAR file
-jar cvf ecommerce-core.jar -C bin .
-
-# Run JAR
-java -jar ecommerce-core.jar
-```
-
-### Python API
-```bash
-# Install production server
-pip install gunicorn
-
-# Run with gunicorn
-gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
-```
-
-### Frontend
-```bash
-# Build for production
-pnpm run build
-
-# Output in dist/ directory
-# Deploy to any static hosting service
-```
-
 ## Additional Resources
 
 - **Java Documentation:** `docs/class-diagram.md`
@@ -304,7 +262,3 @@ For issues or questions:
 | Java Core | `java -cp bin com.ecommerce.Main` | N/A |
 | Python API | `uvicorn app.main:app --reload` | 8000 |
 | Frontend | `pnpm run dev` | 5173 |
-
----
-
-**Happy Coding! 🚀**
