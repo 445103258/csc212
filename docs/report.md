@@ -3,7 +3,7 @@
 
 **Course**: CSC 212  
 **Semester**: Fall 2025  
-**Date**: October 30, 2025
+**Date**: November 6, 2025
 
 ---
 
@@ -22,15 +22,15 @@
 This project implements a comprehensive E-Commerce Inventory & Order Management System designed to help businesses manage product inventory, process customer orders, and gain insights through analytics. The system is built entirely with custom data structures (no Java Collections) and follows a layered architecture pattern.
 
 ### Key Features
-- ✅ Complete custom data structure implementations (ArrayList, LinkedList, Stack, Queue, BST)
-- ✅ Product inventory management with stock tracking
-- ✅ Customer registration and order placement
-- ✅ Order management with status tracking
-- ✅ Review system with rating aggregation
-- ✅ Analytics for top products and common preferences
-- ✅ CSV data import/export
-- ✅ RESTful API backend with Python/FastAPI
-- ✅ Comprehensive time and space complexity analysis
+-  Complete custom data structure implementations (ArrayList, LinkedList, Stack, Queue, BST)
+-  Product inventory management with stock tracking
+-  Customer registration and order placement
+-  Order management with status tracking
+-  Review system with rating aggregation
+-  Analytics for top products and common preferences
+-  CSV data import/export
+-  RESTful API backend with Python/FastAPI
+-  Comprehensive time and space complexity analysis
 
 ---
 
@@ -125,7 +125,7 @@ BST for efficient searching and ordering.
 #### Order
 - Attributes: orderId, customerId, productIds, totalPrice, orderDate, status
 - Methods: addProduct(), removeProduct(), containsProduct()
-- Status enum: PENDING, SHIPPED, DELIVERED, CANCELED
+- Status enum: PENDING, SHIPPED, DELIVERED, CANCELLED
 
 #### Review
 - Attributes: reviewId, productId, customerId, rating (1-5), comment
@@ -254,37 +254,6 @@ The system includes sample CSV data:
 - 4 orders with various statuses
 - 7 reviews with ratings 4-5
 
-### Functional Testing
-
-#### Product Operations
-✅ Add new product  
-✅ Search product by ID  
-✅ Search products by name  
-✅ Update product details  
-✅ Track out-of-stock products  
-
-#### Customer Operations
-✅ Register new customer  
-✅ Place order with inventory validation  
-✅ View customer order history  
-✅ Extract customer reviews  
-
-#### Order Operations
-✅ Create order  
-✅ Update order status  
-✅ Cancel order  
-✅ Get orders between dates  
-
-#### Review Operations
-✅ Add review to product  
-✅ Edit existing review  
-✅ Calculate average rating  
-
-#### Analytics
-✅ Get top 3 products by rating  
-✅ Find common high-rated products between customers  
-✅ Generate inventory reports  
-
 ### Edge Cases Handled
 
 1. **Out of Stock**: Order placement fails if product unavailable
@@ -302,45 +271,7 @@ The system includes sample CSV data:
 1. **Complete Custom Implementation**: All data structures built from scratch
 2. **Comprehensive Functionality**: All project requirements met
 3. **Layered Architecture**: Clean separation of concerns
-4. **Production-Ready Code**: No placeholders or TODOs
-5. **Full Documentation**: Class diagrams, complexity analysis, and reports
-
-### Learning Outcomes
-
-1. **Data Structure Design**: Understanding trade-offs between different structures
-2. **Algorithm Analysis**: Practical application of time/space complexity
-3. **Software Architecture**: Layered design and separation of concerns
-4. **API Design**: RESTful principles and data validation
-5. **System Integration**: Connecting Java, Python, and TypeScript components
-
-### Future Enhancements
-
-1. **Performance Optimization**:
-   - Implement HashMap-like structure for O(1) lookups
-   - Use efficient sorting algorithms (merge sort, quicksort)
-   - Add caching layer for frequently accessed data
-
-2. **Feature Additions**:
-   - User authentication and authorization
-   - Payment processing integration
-   - Email notifications for order status
-   - Advanced analytics dashboard
-   - Recommendation engine
-
-3. **Scalability**:
-   - Database migration (PostgreSQL, MongoDB)
-   - Microservices architecture
-   - Containerization with Docker
-   - Load balancing and caching
-
-### Project Statistics
-
-- **Java Files**: 15 files
-- **Python Files**: 6 files
-- **Total Lines of Code**: ~2,500 lines
-- **Custom Data Structures**: 5 implementations
-- **API Endpoints**: 15+ endpoints
-- **Documentation Pages**: 3 comprehensive documents
+4. **Full Documentation**: Class diagrams, complexity analysis, and reports
 
 ---
 
@@ -350,21 +281,21 @@ The system includes sample CSV data:
 
 #### Java Core System
 ```bash
-cd ecommerce-system/java-core
+cd java-core/
 javac -d bin src/com/ecommerce/**/*.java
 java -cp bin com.ecommerce.Main
 ```
 
 #### Python API Backend
 ```bash
-cd ecommerce-system/python-api
+cd python-api/
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 ```
 
-#### Frontend (Coming Soon)
+#### Frontend
 ```bash
-cd shadcn-ui
+cd shadcn-ui/
 pnpm install
 pnpm run dev
 ```
