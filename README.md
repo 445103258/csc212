@@ -108,7 +108,7 @@ ecommerce-system/
 
 #### 1. Java Core System
 ```bash
-cd ecommerce-system/java-core
+cd java-core/
 
 # Compile
 javac -d bin src/com/ecommerce/**/*.java
@@ -119,7 +119,7 @@ java -cp bin com.ecommerce.Main
 
 #### 2. Python API Backend
 ```bash
-cd ecommerce-system/python-api
+cd python-api/
 
 # Install dependencies
 pip install -r requirements.txt
@@ -132,7 +132,7 @@ Access API documentation at: `http://localhost:8000/docs`
 
 #### 3. Frontend Dashboard
 ```bash
-cd shadcn-ui
+cd shadcn-ui/
 
 # Install dependencies
 pnpm install
