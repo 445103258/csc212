@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # 1. Python API Backend Service
+  api:
+    build:
+      context: .
+      dockerfile: python-api/Dockerfile
+    container_name: ecommerce-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./python-api/data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - ecommerce-network
+
+  # 2. React Frontend Dashboard Service
+  frontend:
+    build:
+      context: .
+      dockerfile: shadcn-ui/Dockerfile
+    container_name: ecommerce-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ecommerce-network
+
+  # 3. Java Core System Service
+  java-core:
+    build:
+      context: .
+      dockerfile: java-core/Dockerfile
+    container_name: ecommerce-java-core
+    depends_on:
+      - api
+    volumes:
+      - ./python-api/data:/app/python-api/data:ro
+    restart: on-failure
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    driver: bridge

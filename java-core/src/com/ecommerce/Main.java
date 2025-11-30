@@ -4,7 +4,6 @@ import com.ecommerce.datastructures.ArrayList;
 import com.ecommerce.models.Customer;
 import com.ecommerce.models.Order;
 import com.ecommerce.models.Product;
-import com.ecommerce.models.Review;
 import com.ecommerce.services.AnalyticsService;
 import com.ecommerce.services.CustomerService;
 import com.ecommerce.services.OrderService;
@@ -52,68 +51,18 @@ public class Main {
     private static void loadData(ProductService productService, CustomerService customerService, 
                                  OrderService orderService) {
         // Load products
-        ArrayList<String[]> productData = CSVReader.readCSV("python-api/data/products.csv");
-        for (int i = 1; i < productData.size(); i++) {
-            String[] row = productData.get(i);
-            int id = Integer.parseInt(row[0]);
-            String name = row[1];
-            double price = Double.parseDouble(row[2]);
-            int stock = Integer.parseInt(row[3]);
-            productService.addProduct(new Product(id, name, price, stock));
-        }
-        System.out.println("✓ Loaded " + productService.getProductCount() + " products");
+        CSVReader.loadProducts("python-api/data/products.csv", productService);
 
         // Load customers
-        ArrayList<String[]> customerData = CSVReader.readCSV("python-api/data/customers.csv");
-        for (int i = 1; i < customerData.size(); i++) {
-            String[] row = customerData.get(i);
-            int id = Integer.parseInt(row[0]);
-            String name = row[1];
-            String email = row[2];
-            customerService.registerCustomer(new Customer(id, name, email));
-        }
-        System.out.println("✓ Loaded " + customerService.getCustomerCount() + " customers");
+        CSVReader.loadCustomers("python-api/data/customers.csv", customerService);
 
         // Load orders
-        ArrayList<String[]> orderData = CSVReader.readCSV("python-api/data/orders.csv");
-        for (int i = 1; i < orderData.size(); i++) {
-            String[] row = orderData.get(i);
-            int orderId = Integer.parseInt(row[0]);
-            int customerId = Integer.parseInt(row[1]);
-            String[] productIdsStr = row[2].replace("[", "").replace("]", "").split(",");
-            ArrayList<Integer> productIds = new ArrayList<>();
-            for (String pidStr : productIdsStr) {
-                productIds.add(Integer.parseInt(pidStr.trim()));
-            }
-            double totalPrice = Double.parseDouble(row[3]);
-            LocalDate orderDate = LocalDate.parse(row[4]);
-            String statusStr = row[5];
-            Order.OrderStatus status = Order.OrderStatus.valueOf(statusStr.toUpperCase());
-            
-            Order order = new Order(orderId, customerId, productIds, totalPrice, orderDate, status);
-            orderService.createOrder(order);
-            
-            Customer customer = customerService.searchCustomerById(customerId);
-            if (customer != null) {
-                customer.addOrder(orderId);
-            }
-        }
-        System.out.println("✓ Loaded " + orderService.getOrderCount() + " orders");
+        CSVReader.loadOrders("python-api/data/orders.csv", orderService);
 
         // Load reviews
-        ArrayList<String[]> reviewData = CSVReader.readCSV("python-api/data/reviews.csv");
-        for (int i = 1; i < reviewData.size(); i++) {
-            String[] row = reviewData.get(i);
-            int reviewId = Integer.parseInt(row[0]);
-            int productId = Integer.parseInt(row[1]);
-            int customerId = Integer.parseInt(row[2]);
-            int rating = Integer.parseInt(row[3]);
-            String comment = row[4];
-            
-            Review review = new Review(reviewId, productId, customerId, rating, comment);
-            productService.addReviewToProduct(productId, review);
-        }
-        System.out.println("✓ Loaded reviews\n");
+        CSVReader.loadReviews("python-api/data/reviews.csv", productService);
+        
+        System.out.println();
     }
 
     private static void demonstratePhaseIIRequirements(ProductService productService, 
@@ -140,7 +89,11 @@ public class Main {
         System.out.println("2. SEARCH PRODUCT BY ID (O(log n))");
         System.out.println("-----------------------------------");
         Product found = productService.searchById(101);
-        System.out.println("✓ Found product ID 101: " + found);
+        if (found != null) {
+            System.out.println("✓ Found product ID 101: " + found);
+        } else {
+            System.out.println("✗ Product ID 101 not found");
+        }
         System.out.println();
 
         // 3. Range Query by Price
@@ -159,19 +112,25 @@ public class Main {
         System.out.println("4. CUSTOMER SEARCH (O(log n))");
         System.out.println("------------------------------");
         Customer customer = customerService.searchCustomerById(1);
-        System.out.println("✓ Found customer ID 1: " + customer.getName() + " (" + customer.getEmail() + ")");
+        if (customer != null) {
+            System.out.println("✓ Found customer ID 1: " + customer.getName() + " (" + customer.getEmail() + ")");
+        } else {
+            System.out.println("✗ Customer ID 1 not found");
+        }
         System.out.println();
 
         // 5. Customer Order History
         System.out.println("5. CUSTOMER ORDER HISTORY (O(k * log n))");
         System.out.println("-----------------------------------------");
-        ArrayList<Order> orderHistory = customerService.getCustomerOrderHistory(1);
-        System.out.println("✓ Order history for " + customer.getName() + ":");
-        for (int i = 0; i < Math.min(3, orderHistory.size()); i++) {
-            Order order = orderHistory.get(i);
-            System.out.println("  - Order #" + order.getOrderId() + ": $" + 
-                             String.format("%.2f", order.getTotalPrice()) + 
-                             " on " + order.getOrderDate());
+        if (customer != null) {
+            ArrayList<Order> orderHistory = customerService.getCustomerOrderHistory(1);
+            System.out.println("✓ Order history for " + customer.getName() + ":");
+            for (int i = 0; i < Math.min(3, orderHistory.size()); i++) {
+                Order order = orderHistory.get(i);
+                System.out.println("  - Order #" + order.getOrderId() + ": $" + 
+                                 String.format("%.2f", order.getTotalPrice()) + 
+                                 " on " + order.getOrderDate());
+            }
         }
         System.out.println();
 
