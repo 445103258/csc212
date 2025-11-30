@@ -2,28 +2,28 @@
 
 A comprehensive inventory and order management system built with custom data structures, Java core logic, Python FastAPI backend, and React TypeScript frontend.
 
-## Project Overview
+## 🎯 Project Overview
 
 This system helps businesses manage product inventory, process customer orders, and gain insights through analytics. Built entirely with custom data structures (no Java Collections Framework) as a CSC 212 course project.
 
-## Features
+## ✨ Features
 
 ### Core Functionality
--  **Product Management**: Add, update, remove, search products by ID or name
--  **Inventory Tracking**: Monitor stock levels and out-of-stock items
--  **Customer Management**: Register customers and track order history
--  **Order Processing**: Place orders with automatic inventory validation
--  **Review System**: Add/edit reviews with 1-5 star ratings
--  **Analytics**: Top products by rating, common preferences, inventory reports
+- ✅ **Product Management**: Add, update, remove, search products by ID or name
+- ✅ **Inventory Tracking**: Monitor stock levels and out-of-stock items
+- ✅ **Customer Management**: Register customers and track order history
+- ✅ **Order Processing**: Place orders with automatic inventory validation
+- ✅ **Review System**: Add/edit reviews with 1-5 star ratings
+- ✅ **Analytics**: Top products by rating, common preferences, inventory reports
 
 ### Technical Highlights
--  **Custom Data Structures**: ArrayList, LinkedList, Stack, Queue, Binary Search Tree
--  **Layered Architecture**: Separation of concerns with repository, service, and view layers
--  **RESTful API**: FastAPI backend with Pydantic validation
--  **CSV Integration**: Import/export data from CSV files
--  **Complexity Analysis**: Comprehensive time and space complexity documentation
+- ✅ **Custom Data Structures**: ArrayList, LinkedList, Stack, Queue, Binary Search Tree
+- ✅ **Layered Architecture**: Separation of concerns with repository, service, and view layers
+- ✅ **RESTful API**: FastAPI backend with Pydantic validation
+- ✅ **CSV Integration**: Import/export data from CSV files
+- ✅ **Complexity Analysis**: Comprehensive time and space complexity documentation
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 ┌─────────────────────────────────────┐
@@ -46,13 +46,13 @@ This system helps businesses manage product inventory, process customer orders, 
 └─────────────────────────────────────┘
 ```
 
-##  Project Structure
+## 📁 Project Structure
 
 ```
 ecommerce-system/
 ├── java-core/                      # Core business logic
 │   └── src/com/ecommerce/
-│       ├── datastructures/        # Custom data structures implementations
+│       ├── datastructures/        # Custom implementations
 │       │   ├── ArrayList.java
 │       │   ├── LinkedList.java
 │       │   ├── Stack.java
@@ -70,7 +70,7 @@ ecommerce-system/
 │       │   └── AnalyticsService.java
 │       ├── utils/                 # Utilities
 │       │   └── CSVReader.java
-│       └── Main.java              # Entry point (Java TUI)
+│       └── Main.java              # Entry point
 ├── python-api/                     # Backend API
 │   ├── data/                      # CSV data files
 │   │   ├── products.csv
@@ -96,7 +96,7 @@ ecommerce-system/
 └── README.md
 ```
 
-## Getting Started
+## 🚀 Getting Started
 
 ### Prerequisites
 - Java JDK 11 or higher
@@ -108,7 +108,7 @@ ecommerce-system/
 
 #### 1. Java Core System
 ```bash
-cd java-core/
+cd ecommerce-system/java-core
 
 # Compile
 javac -d bin src/com/ecommerce/**/*.java
@@ -119,7 +119,7 @@ java -cp bin com.ecommerce.Main
 
 #### 2. Python API Backend
 ```bash
-cd python-api/
+cd ecommerce-system/python-api
 
 # Install dependencies
 pip install -r requirements.txt
@@ -130,9 +130,9 @@ uvicorn app.main:app --reload --port 8000
 
 Access API documentation at: `http://localhost:8000/docs`
 
-#### 3. Frontend Dashboard
+#### 3. Frontend Dashboard (Coming Soon)
 ```bash
-cd shadcn-ui/
+cd shadcn-ui
 
 # Install dependencies
 pnpm install
@@ -141,13 +141,7 @@ pnpm install
 pnpm run dev
 ```
 
-### Using docker-compose
-```bash
-# Build images and run services
-docker compose up --build
-```
-
-## API Endpoints
+## 📊 API Endpoints
 
 ### Products
 - `GET /api/v1/products` - Get all products
@@ -182,7 +176,7 @@ docker compose up --build
 ### Health
 - `GET /api/v1/health` - Health check and system stats
 
-## Complexity Analysis
+## 📈 Complexity Analysis
 
 ### Data Structures
 | Structure | Operation | Time | Space |
@@ -204,13 +198,38 @@ docker compose up --build
 
 See [docs/complexity-analysis.md](docs/complexity-analysis.md) for detailed analysis.
 
-## Documentation
+## 📚 Documentation
 
 - **[Class Diagram](docs/class-diagram.md)**: UML diagrams and relationships
 - **[Complexity Analysis](docs/complexity-analysis.md)**: Time and space complexity
 - **[Project Report](docs/report.md)**: Complete project documentation
 
-## Technology Stack
+## 🧪 Sample Data
+
+The system includes sample CSV data:
+- 5 products (Laptop, Mouse, Keyboard, USB Hub, Laptop Stand)
+- 4 customers
+- 4 orders with various statuses
+- 7 reviews with ratings 4-5
+
+## 🎓 Academic Context
+
+**Course**: CSC 212 - Data Structures  
+**Semester**: Fall 2025  
+**Due Date**: October 30, 2025
+
+### Project Requirements Met
+✅ Custom data structures (no Java Collections)  
+✅ CSV file reading  
+✅ All CRUD operations  
+✅ Customer reviews with efficient extraction  
+✅ Top 3 products by rating  
+✅ Orders between dates  
+✅ Common high-rated products between customers  
+✅ Complete complexity analysis  
+✅ Class diagrams and documentation  
+
+## 🔧 Technology Stack
 
 ### Backend
 - **Java 11+**: Core business logic
@@ -219,9 +238,36 @@ See [docs/complexity-analysis.md](docs/complexity-analysis.md) for detailed anal
 - **Pydantic**: Data validation
 - **Uvicorn**: ASGI server
 
-### Frontend
+### Frontend (Planned)
 - **React 18**: UI library
 - **TypeScript**: Type safety
 - **shadcn-ui**: Component library
 - **Tailwind CSS**: Styling
 - **Vite**: Build tool
+
+## 📝 License
+
+This is an academic project for CSC 212 course.
+
+## 👥 Team
+
+Maximum 3 team members per project as per course requirements.
+
+## 🤝 Contributing
+
+This is an academic project. Collaboration within team members only.
+
+## ⚠️ Academic Integrity
+
+- All data structures implemented from scratch
+- No use of Java Collections Framework
+- Original work with proper documentation
+- Code will be checked for plagiarism
+
+## 📞 Support
+
+For questions or issues, refer to the course materials or contact the teaching team.
+
+---
+
+**Built with ❤️ for CSC 212 Fall 2025**

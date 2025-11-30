@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -74,7 +73,6 @@ export default function Dashboard() {
   const [editingReview, setEditingReview] = useState<{ review: Review; product: Product } | null>(null);
   const [searchProductId, setSearchProductId] = useState('');
   const [searchOrderId, setSearchOrderId] = useState('');
-  const [openOrderCombobox, setOpenOrderCombobox] = useState(false);
   const [selectedCustomerHistory, setSelectedCustomerHistory] = useState<Customer | null>(null);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
 
@@ -251,27 +249,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleUpdateOrderStatus = async (orderId: number, newStatus: string) => {
-      const query = new URLSearchParams({ status: newStatus }); 
-      try {
-	  const response = await fetch(`${API_BASE_URL}/orders/${orderId}/status?${query.toString()}`, {
-	      method: 'PATCH',
-	      headers: { 'Content-Type': 'application/json' },
-	  });
-	  
-	  if (response.ok) {
-	      toast.success(`Order #${orderId} status updated to ${newStatus}!`);
-	      fetchData();
-	  } else {
-	      toast.error('Failed to update order status.');
-	      console.error('API Error:', await response.text());
-	  }
-      } catch (error) {
-	  toast.error('An error occurred while updating the order status.');
-	  console.error('Fetch Error:', error);
-      }
-  };
-    
   const handleCancelOrder = async (orderId: number) => {
     if (!confirm('Are you sure you want to cancel this order?')) return;
     try {
@@ -334,7 +311,7 @@ export default function Dashboard() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/analytics/common-products?customer_id1=${commonProductsFilter.customer1Id}&customer_id2=${commonProductsFilter.customer2Id}`
+        `${API_BASE_URL}/analytics/common-high-rated-products?customer1_id=${commonProductsFilter.customer1Id}&customer2_id=${commonProductsFilter.customer2Id}`
       );
       
       if (response.ok) {
@@ -406,7 +383,7 @@ export default function Dashboard() {
       'Pending': 'bg-yellow-500',
       'Shipped': 'bg-blue-500',
       'Delivered': 'bg-green-500',
-      'Cancelled': 'bg-red-500'
+      'Canceled': 'bg-red-500'
     };
     return <Badge className={colors[status] || 'bg-gray-500'}>{status}</Badge>;
   };
@@ -714,7 +691,7 @@ export default function Dashboard() {
                           <Label>Price</Label>
                           <Input
                             type="number"
-                            step="1.00"
+                            step="0.01"
                             value={newProduct.price}
                             onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                             placeholder="0.00"
@@ -909,14 +886,14 @@ export default function Dashboard() {
                           </Button>
                         </TableCell>
                       </TableRow>
-                      ))}
+                    ))}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
           </TabsContent>
 
-	  <TabsContent value="orders" className="space-y-4">
+          <TabsContent value="orders" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Order Management</CardTitle>
@@ -940,8 +917,8 @@ export default function Dashboard() {
                             <PopoverTrigger asChild>
                               <Button variant="outline" className="w-full justify-between">
                                 {newOrder.customerId ? 
-                                customers.find(c => c.customerId === newOrder.customerId)?.name || "Select customer..." 
-                                : "Select customer..."}
+                                  customers.find(c => c.customerId === newOrder.customerId)?.name || "Select customer..." 
+                                  : "Select customer..."}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                             </PopoverTrigger>
@@ -952,25 +929,25 @@ export default function Dashboard() {
                                   <CommandEmpty>No customer found.</CommandEmpty>
                                   <CommandGroup>
                                     {customers.map((customer) => (
-                                    <CommandItem
-                                      key={customer.customerId}
-                                      value={`${customer.customerId} ${customer.name}`}
-                                      onSelect={() => {
-                                      setNewOrder({ ...newOrder, customerId: customer.customerId });
-                                      setOpenCustomerCombobox(false);
-                                      }}
+                                      <CommandItem
+                                        key={customer.customerId}
+                                        value={`${customer.customerId} ${customer.name}`}
+                                        onSelect={() => {
+                                          setNewOrder({ ...newOrder, customerId: customer.customerId });
+                                          setOpenCustomerCombobox(false);
+                                        }}
                                       >
-                                      <Check
-                                        className={cn(
-                                        "mr-2 h-4 w-4",
-                                        newOrder.customerId === customer.customerId ? "opacity-100" : "opacity-0"
-                                        )}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            newOrder.customerId === customer.customerId ? "opacity-100" : "opacity-0"
+                                          )}
                                         />
-                                      <div>
-                                        <div className="font-medium">{customer.name}</div>
-                                        <div className="text-sm text-muted-foreground">ID: {customer.customerId} | {customer.email}</div>
-                                      </div>
-                                    </CommandItem>
+                                        <div>
+                                          <div className="font-medium">{customer.name}</div>
+                                          <div className="text-sm text-muted-foreground">ID: {customer.customerId} | {customer.email}</div>
+                                        </div>
+                                      </CommandItem>
                                     ))}
                                   </CommandGroup>
                                 </CommandList>
@@ -994,32 +971,32 @@ export default function Dashboard() {
                                   <CommandEmpty>No product found.</CommandEmpty>
                                   <CommandGroup>
                                     {products.filter(p => p.stock > 0).map((product) => (
-                                    <CommandItem
-                                      key={product.productId}
-                                      value={`${product.productId} ${product.name}`}
-                                      onSelect={() => {
-                                      const isSelected = newOrder.productIds.includes(product.productId);
-                                      setNewOrder({
-                                      ...newOrder,
-                                      productIds: isSelected
-                                      ? newOrder.productIds.filter(id => id !== product.productId)
-                                      : [...newOrder.productIds, product.productId]
-                                      });
-                                      }}
+                                      <CommandItem
+                                        key={product.productId}
+                                        value={`${product.productId} ${product.name}`}
+                                        onSelect={() => {
+                                          const isSelected = newOrder.productIds.includes(product.productId);
+                                          setNewOrder({
+                                            ...newOrder,
+                                            productIds: isSelected
+                                              ? newOrder.productIds.filter(id => id !== product.productId)
+                                              : [...newOrder.productIds, product.productId]
+                                          });
+                                        }}
                                       >
-                                      <Check
-                                        className={cn(
-                                        "mr-2 h-4 w-4",
-                                        newOrder.productIds.includes(product.productId) ? "opacity-100" : "opacity-0"
-                                        )}
+                                        <Check
+                                          className={cn(
+                                            "mr-2 h-4 w-4",
+                                            newOrder.productIds.includes(product.productId) ? "opacity-100" : "opacity-0"
+                                          )}
                                         />
-                                      <div>
-                                        <div className="font-medium">{product.name}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                          ID: {product.productId} | ${product.price} | Stock: {product.stock}
+                                        <div>
+                                          <div className="font-medium">{product.name}</div>
+                                          <div className="text-sm text-muted-foreground">
+                                            ID: {product.productId} | ${product.price} | Stock: {product.stock}
+                                          </div>
                                         </div>
-                                      </div>
-                                    </CommandItem>
+                                      </CommandItem>
                                     ))}
                                   </CommandGroup>
                                 </CommandList>
@@ -1027,23 +1004,23 @@ export default function Dashboard() {
                             </PopoverContent>
                           </Popover>
                           {newOrder.productIds.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {newOrder.productIds.map(id => {
-                            const product = products.find(p => p.productId === id);
-                            return product ? (
-                            <Badge key={id} variant="secondary" className="flex items-center gap-1">
-                              {product.name}
-                              <X
-                                className="h-3 w-3 cursor-pointer"
-                                onClick={() => setNewOrder({
-                                ...newOrder,
-                                productIds: newOrder.productIds.filter(pid => pid !== id)
-                                })}
-                                />
-                            </Badge>
-                            ) : null;
-                            })}
-                          </div>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {newOrder.productIds.map(id => {
+                                const product = products.find(p => p.productId === id);
+                                return product ? (
+                                  <Badge key={id} variant="secondary" className="flex items-center gap-1">
+                                    {product.name}
+                                    <X
+                                      className="h-3 w-3 cursor-pointer"
+                                      onClick={() => setNewOrder({
+                                        ...newOrder,
+                                        productIds: newOrder.productIds.filter(pid => pid !== id)
+                                      })}
+                                    />
+                                  </Badge>
+                                ) : null;
+                              })}
+                            </div>
                           )}
                         </div>
                         <Button onClick={handlePlaceOrder} className="w-full" disabled={!newOrder.customerId || newOrder.productIds.length === 0}>
@@ -1053,53 +1030,18 @@ export default function Dashboard() {
                     </DialogContent>
                   </Dialog>
 
-		  <div className="flex gap-2 flex-1">
-		    <Popover open={openOrderCombobox} onOpenChange={setOpenOrderCombobox}>
-		      <PopoverTrigger asChild>
-			<Button variant="outline" className="flex-1 justify-between">
-			  {searchOrderId ? `Order #${searchOrderId}` : "Search by ID..."}
-			  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-			</Button>
-		      </PopoverTrigger>
-		      <PopoverContent className="w-[400px] p-0">
-			<Command>
-			  <CommandInput placeholder="Search order ID..." />
-			  <CommandList>
-			    <CommandEmpty>No order found.</CommandEmpty>
-			    <CommandGroup>
-			      {orders.map((order) => (
-			      <CommandItem
-				key={order.orderId}
-				value={`${order.orderId} ${order.totalPrice} ${order.status}`} // Value for semantic search/filtering
-				onSelect={() => {
-				setSearchOrderId(order.orderId.toString());
-				setOpenOrderCombobox(false);
-				}}
-				>
-				<Check
-				  className={cn(
-				  "mr-2 h-4 w-4",
-				  searchOrderId === order.orderId.toString() ? "opacity-100" : "opacity-0"
-				  )}
-				  />
-				<div className="flex-1">
-				  <div className="font-medium">Order #{order.orderId}</div>
-				  <div className="text-sm text-muted-foreground">
-				    Status: {order.status} | Total: ${order.totalPrice.toFixed(2)}
-				  </div>
-				</div>
-			      </CommandItem>
-			      ))}
-			    </CommandGroup>
-			  </CommandList>
-			</Command>
-		      </PopoverContent>
-		    </Popover>
-		    <Button onClick={handleSearchOrder} variant="secondary">
-		      <Search className="h-4 w-4" />
-		    </Button>
-		  </div>
-		</div>
+                  <div className="flex gap-2 flex-1">
+                    <Input
+                      type="number"
+                      placeholder="Search by Order ID..."
+                      value={searchOrderId}
+                      onChange={(e) => setSearchOrderId(e.target.value)}
+                    />
+                    <Button onClick={handleSearchOrder} variant="secondary">
+                      <Search className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
 
                 <Table>
                   <TableHeader>
@@ -1115,46 +1057,28 @@ export default function Dashboard() {
                   </TableHeader>
                   <TableBody>
                     {orders.map((order) => {
-                    const customer = customers.find(c => c.customerId === order.customerId);
-                    return (
-                    <TableRow key={order.orderId}>
-                      <TableCell>{order.orderId}</TableCell>
-                      <TableCell>{customer?.name || `Customer #${order.customerId}`}</TableCell>
-                      <TableCell>{order.productIds.length} items</TableCell>
-                      <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
-                      <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
-                      <TableCell>{getStatusBadge(order.status)}</TableCell>
-		      <TableCell>
-			<Select
-			  value={order.status}
-			  onValueChange={(newStatus) => handleUpdateOrderStatus(order.orderId, newStatus)}
-			  >
-			  <SelectTrigger className="w-[120px]">
-			    <SelectValue placeholder={order.status} /> 
-			  </SelectTrigger>
-			  <SelectContent>
-			    {['Pending', 'Shipped', 'Delivered'].map(status => (
-			    <SelectItem key={status} value={status}>
-			      {status}
-			    </SelectItem>
-			    ))}
-			  </SelectContent>
-			</Select>
-		      </TableCell>
-		      
-                      <TableCell>
-                        {order.status === 'Pending' && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleCancelOrder(order.orderId)}
-                          >
-                          Cancel
-                        </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    );
+                      const customer = customers.find(c => c.customerId === order.customerId);
+                      return (
+                        <TableRow key={order.orderId}>
+                          <TableCell>{order.orderId}</TableCell>
+                          <TableCell>{customer?.name || `Customer #${order.customerId}`}</TableCell>
+                          <TableCell>{order.productIds.length} items</TableCell>
+                          <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
+                          <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          <TableCell>
+                            {order.status === 'Pending' && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleCancelOrder(order.orderId)}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
                     })}
                   </TableBody>
                 </Table>

@@ -8,7 +8,7 @@ class OrderStatus(str, Enum):
     PENDING = "Pending"
     SHIPPED = "Shipped"
     DELIVERED = "Delivered"
-    CANCELED = "Cancelled"
+    CANCELED = "Canceled"
 
 
 class Review(BaseModel):

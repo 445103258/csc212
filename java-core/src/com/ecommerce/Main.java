@@ -1,250 +1,287 @@
 package com.ecommerce;
 
 import com.ecommerce.datastructures.ArrayList;
-import com.ecommerce.models.*;
-import com.ecommerce.services.*;
+import com.ecommerce.models.Customer;
+import com.ecommerce.models.Order;
+import com.ecommerce.models.Product;
+import com.ecommerce.models.Review;
+import com.ecommerce.services.AnalyticsService;
+import com.ecommerce.services.CustomerService;
+import com.ecommerce.services.OrderService;
+import com.ecommerce.services.ProductService;
 import com.ecommerce.utils.CSVReader;
 import java.time.LocalDate;
 
 /**
- * Main application demonstrating all functionality with complexity analysis
+ * PHASE II: E-Commerce System with Binary Search Trees
+ * 
+ * This demonstrates the transition from Phase I (Linear Data Structures) 
+ * to Phase II (Logarithmic Data Structures - BST)
+ * 
+ * Key Improvements:
+ * 1. Product search: O(n) -> O(log n)
+ * 2. Customer search: O(n) -> O(log n)
+ * 3. Order search: O(n) -> O(log n)
+ * 4. Range queries: O(n) -> O(log n + k)
+ * 5. Sorted traversals: O(n log n) -> O(n)
  */
 public class Main {
-    
     public static void main(String[] args) {
-        System.out.println("=== E-Commerce Inventory & Order Management System ===\n");
-        
+        System.out.println("==============================================");
+        System.out.println("E-COMMERCE SYSTEM - PHASE II");
+        System.out.println("Binary Search Tree Implementation");
+        System.out.println("==============================================\n");
+
+        // Initialize services with BST-based implementations
         ProductService productService = new ProductService();
         OrderService orderService = new OrderService();
         CustomerService customerService = new CustomerService(productService, orderService);
-        AnalyticsService analyticsService = new AnalyticsService(productService);
-        
-        /* String dataPath = "../python-api/data/"; */
-	String dataPath = "./data/";
-        
+        AnalyticsService analyticsService = new AnalyticsService(productService, customerService);
+
+        // Load data from CSV files
         System.out.println("Loading data from CSV files...\n");
-        CSVReader.loadProducts(dataPath + "products.csv", productService);
-        CSVReader.loadCustomers(dataPath + "customers.csv", customerService);
-        CSVReader.loadOrders(dataPath + "orders.csv", orderService);
-        CSVReader.loadReviews(dataPath + "reviews.csv", productService);
+        loadData(productService, customerService, orderService);
+
+        // Demonstrate Phase II requirements
+        demonstratePhaseIIRequirements(productService, customerService, orderService, analyticsService);
         
-        System.out.println("\n=== Demonstrating Core Functionality ===\n");
-        
-        demonstrateProductOperations(productService);
-        demonstrateCustomerOperations(customerService, productService);
-        demonstrateOrderOperations(orderService, customerService, productService);
-        demonstrateReviewOperations(productService, customerService);
-        demonstrateAnalytics(analyticsService, customerService, orderService);
-        
-        System.out.println("\n=== Time Complexity Analysis ===\n");
-        printComplexityAnalysis();
+        // Show Big-O comparison
+        printComplexityComparison();
     }
-    
-    private static void demonstrateProductOperations(ProductService productService) {
-        System.out.println("--- Product Operations ---");
+
+    private static void loadData(ProductService productService, CustomerService customerService, 
+                                 OrderService orderService) {
+        // Load products
+        ArrayList<String[]> productData = CSVReader.readCSV("python-api/data/products.csv");
+        for (int i = 1; i < productData.size(); i++) {
+            String[] row = productData.get(i);
+            int id = Integer.parseInt(row[0]);
+            String name = row[1];
+            double price = Double.parseDouble(row[2]);
+            int stock = Integer.parseInt(row[3]);
+            productService.addProduct(new Product(id, name, price, stock));
+        }
+        System.out.println("✓ Loaded " + productService.getProductCount() + " products");
+
+        // Load customers
+        ArrayList<String[]> customerData = CSVReader.readCSV("python-api/data/customers.csv");
+        for (int i = 1; i < customerData.size(); i++) {
+            String[] row = customerData.get(i);
+            int id = Integer.parseInt(row[0]);
+            String name = row[1];
+            String email = row[2];
+            customerService.registerCustomer(new Customer(id, name, email));
+        }
+        System.out.println("✓ Loaded " + customerService.getCustomerCount() + " customers");
+
+        // Load orders
+        ArrayList<String[]> orderData = CSVReader.readCSV("python-api/data/orders.csv");
+        for (int i = 1; i < orderData.size(); i++) {
+            String[] row = orderData.get(i);
+            int orderId = Integer.parseInt(row[0]);
+            int customerId = Integer.parseInt(row[1]);
+            String[] productIdsStr = row[2].replace("[", "").replace("]", "").split(",");
+            ArrayList<Integer> productIds = new ArrayList<>();
+            for (String pidStr : productIdsStr) {
+                productIds.add(Integer.parseInt(pidStr.trim()));
+            }
+            double totalPrice = Double.parseDouble(row[3]);
+            LocalDate orderDate = LocalDate.parse(row[4]);
+            String statusStr = row[5];
+            Order.OrderStatus status = Order.OrderStatus.valueOf(statusStr.toUpperCase());
+            
+            Order order = new Order(orderId, customerId, productIds, totalPrice, orderDate, status);
+            orderService.createOrder(order);
+            
+            Customer customer = customerService.searchCustomerById(customerId);
+            if (customer != null) {
+                customer.addOrder(orderId);
+            }
+        }
+        System.out.println("✓ Loaded " + orderService.getOrderCount() + " orders");
+
+        // Load reviews
+        ArrayList<String[]> reviewData = CSVReader.readCSV("python-api/data/reviews.csv");
+        for (int i = 1; i < reviewData.size(); i++) {
+            String[] row = reviewData.get(i);
+            int reviewId = Integer.parseInt(row[0]);
+            int productId = Integer.parseInt(row[1]);
+            int customerId = Integer.parseInt(row[2]);
+            int rating = Integer.parseInt(row[3]);
+            String comment = row[4];
+            
+            Review review = new Review(reviewId, productId, customerId, rating, comment);
+            productService.addReviewToProduct(productId, review);
+        }
+        System.out.println("✓ Loaded reviews\n");
+    }
+
+    private static void demonstratePhaseIIRequirements(ProductService productService, 
+                                                       CustomerService customerService,
+                                                       OrderService orderService,
+                                                       AnalyticsService analyticsService) {
         
-        System.out.println("\n1. Add New Product:");
-        Product newProduct = new Product(102, "Wireless Mouse", 29.99, 50);
+        System.out.println("\n==============================================");
+        System.out.println("PHASE II REQUIREMENTS DEMONSTRATION");
+        System.out.println("==============================================\n");
+
+        // 1. Insert/Update Product with O(log n)
+        System.out.println("1. INSERT/UPDATE PRODUCT (O(log n))");
+        System.out.println("-----------------------------------");
+        Product newProduct = new Product(999, "Gaming Mouse", 79.99, 50);
         productService.addProduct(newProduct);
-        System.out.println("Added: " + newProduct);
-        
-        System.out.println("\n2. Search Product by ID (101):");
+        System.out.println("✓ Added: " + newProduct);
+        productService.updateProduct(999, "Gaming Mouse Pro", 89.99, 45);
+        Product updated = productService.searchById(999);
+        System.out.println("✓ Updated: " + updated);
+        System.out.println();
+
+        // 2. Search Product by ID with O(log n)
+        System.out.println("2. SEARCH PRODUCT BY ID (O(log n))");
+        System.out.println("-----------------------------------");
         Product found = productService.searchById(101);
-        System.out.println(found != null ? found : "Not found");
-        
-        System.out.println("\n3. Search Products by Name ('Laptop'):");
-        ArrayList<Product> searchResults = productService.searchByName("Laptop");
-        for (int i = 0; i < searchResults.size(); i++) {
-            System.out.println("  " + searchResults.get(i));
-        }
-        
-        System.out.println("\n4. Update Product:");
-        productService.updateProduct(102, "Wireless Mouse Pro", 34.99, 45);
-        System.out.println("Updated: " + productService.searchById(102));
-        
-        System.out.println("\n5. Track Out-of-Stock Products:");
-        ArrayList<Product> outOfStock = productService.getOutOfStockProducts();
-        System.out.println("Out of stock products: " + outOfStock.size());
-        
+        System.out.println("✓ Found product ID 101: " + found);
         System.out.println();
-    }
-    
-    private static void demonstrateCustomerOperations(CustomerService customerService, 
-                                                     ProductService productService) {
-        System.out.println("--- Customer Operations ---");
-        
-        System.out.println("\n1. Register New Customer:");
-        Customer newCustomer = new Customer(202, "Bob Smith", "bob.smith@example.com");
-        customerService.registerCustomer(newCustomer);
-        System.out.println("Registered: " + newCustomer);
-        
-        System.out.println("\n2. Place Order for Customer:");
-        ArrayList<Integer> productIds = new ArrayList<>();
-        productIds.add(101);
-        productIds.add(102);
-        Order newOrder = customerService.placeOrder(201, productIds);
-        if (newOrder != null) {
-            System.out.println("Order placed: " + newOrder);
-        } else {
-            System.out.println("Failed to place order");
+
+        // 3. Range Query by Price
+        System.out.println("3. RANGE QUERY BY PRICE (O(log n + k))");
+        System.out.println("---------------------------------------");
+        ArrayList<Product> priceRange = productService.getProductsByPriceRange(20.0, 50.0);
+        System.out.println("✓ Products in price range [$20.00 - $50.00]:");
+        for (int i = 0; i < Math.min(5, priceRange.size()); i++) {
+            Product p = priceRange.get(i);
+            System.out.println("  - " + p.getName() + ": $" + p.getPrice());
         }
-        
-        System.out.println("\n3. View Customer Order History:");
-        ArrayList<Order> orderHistory = customerService.getCustomerOrderHistory(201);
-        System.out.println("Customer 201 has " + orderHistory.size() + " orders:");
-        for (int i = 0; i < orderHistory.size(); i++) {
-            System.out.println("  " + orderHistory.get(i));
-        }
-        
+        System.out.println("  Total: " + priceRange.size() + " products");
         System.out.println();
-    }
-    
-    private static void demonstrateOrderOperations(OrderService orderService,
-                                                   CustomerService customerService,
-                                                   ProductService productService) {
-        System.out.println("--- Order Operations ---");
-        
-        System.out.println("\n1. Search Order by ID:");
-        Order order = orderService.searchOrderById(301);
-        System.out.println(order != null ? order : "Not found");
-        
-        System.out.println("\n2. Update Order Status:");
-        boolean updated = orderService.updateOrderStatus(301, Order.OrderStatus.SHIPPED);
-        System.out.println("Status updated: " + updated);
-        if (updated) {
-            System.out.println("New status: " + orderService.searchOrderById(301));
-        }
-        
-        System.out.println("\n3. Get Orders Between Dates:");
-        LocalDate startDate = LocalDate.of(2025, 1, 1);
-        LocalDate endDate = LocalDate.of(2025, 12, 31);
-        ArrayList<Order> ordersInRange = orderService.getOrdersBetweenDates(startDate, endDate);
-        System.out.println("Orders between " + startDate + " and " + endDate + ": " + ordersInRange.size());
-        for (int i = 0; i < ordersInRange.size(); i++) {
-            System.out.println("  " + ordersInRange.get(i));
-        }
-        
+
+        // 4. Customer Operations with O(log n)
+        System.out.println("4. CUSTOMER SEARCH (O(log n))");
+        System.out.println("------------------------------");
+        Customer customer = customerService.searchCustomerById(1);
+        System.out.println("✓ Found customer ID 1: " + customer.getName() + " (" + customer.getEmail() + ")");
         System.out.println();
-    }
-    
-    private static void demonstrateReviewOperations(ProductService productService,
-                                                    CustomerService customerService) {
-        System.out.println("--- Review Operations ---");
-        
-        System.out.println("\n1. Add Review to Product:");
-        Review newReview = new Review(402, 102, 201, 4, "Great mouse, very responsive!");
-        productService.addReviewToProduct(102, newReview);
-        System.out.println("Added review: " + newReview);
-        
-        System.out.println("\n2. Edit Review:");
-        boolean edited = productService.editReview(102, 402, 5, "Excellent mouse, highly recommend!");
-        System.out.println("Review edited: " + edited);
-        
-        System.out.println("\n3. Get Average Rating for Product:");
-        Product product = productService.searchById(101);
-        if (product != null) {
-            System.out.println("Product: " + product.getName());
-            System.out.println("Average Rating: " + String.format("%.2f", product.getAverageRating()));
-            System.out.println("Total Reviews: " + product.getReviews().size());
+
+        // 5. Customer Order History
+        System.out.println("5. CUSTOMER ORDER HISTORY (O(k * log n))");
+        System.out.println("-----------------------------------------");
+        ArrayList<Order> orderHistory = customerService.getCustomerOrderHistory(1);
+        System.out.println("✓ Order history for " + customer.getName() + ":");
+        for (int i = 0; i < Math.min(3, orderHistory.size()); i++) {
+            Order order = orderHistory.get(i);
+            System.out.println("  - Order #" + order.getOrderId() + ": $" + 
+                             String.format("%.2f", order.getTotalPrice()) + 
+                             " on " + order.getOrderDate());
         }
-        
-        System.out.println("\n4. Extract Reviews from Specific Customer:");
-        ArrayList<Review> customerReviews = customerService.getCustomerReviews(201);
-        System.out.println("Customer 201 has written " + customerReviews.size() + " reviews:");
-        for (int i = 0; i < customerReviews.size(); i++) {
-            System.out.println("  " + customerReviews.get(i));
-        }
-        
         System.out.println();
-    }
-    
-    private static void demonstrateAnalytics(AnalyticsService analyticsService,
-                                            CustomerService customerService,
-                                            OrderService orderService) {
-        System.out.println("--- Analytics & Business Intelligence ---");
-        
-        System.out.println("\n1. Top 3 Products by Average Rating:");
+
+        // 6. ADVANCED QUERY: Orders Between Two Dates
+        System.out.println("6. ORDERS BETWEEN TWO DATES (O(log n + k))");
+        System.out.println("-------------------------------------------");
+        LocalDate startDate = LocalDate.of(2024, 1, 1);
+        LocalDate endDate = LocalDate.of(2024, 6, 30);
+        ArrayList<Order> dateRangeOrders = orderService.getOrdersBetweenDates(startDate, endDate);
+        System.out.println("✓ Orders between " + startDate + " and " + endDate + ":");
+        System.out.println("  Total orders: " + dateRangeOrders.size());
+        for (int i = 0; i < Math.min(3, dateRangeOrders.size()); i++) {
+            Order order = dateRangeOrders.get(i);
+            System.out.println("  - Order #" + order.getOrderId() + " on " + order.getOrderDate() + 
+                             " - $" + String.format("%.2f", order.getTotalPrice()));
+        }
+        System.out.println();
+
+        // 7. Top 3 Products by Rating
+        System.out.println("7. TOP 3 PRODUCTS BY RATING");
+        System.out.println("----------------------------");
         ArrayList<Product> top3 = analyticsService.getTop3ProductsByRating();
+        System.out.println("✓ Top 3 highest rated products:");
         for (int i = 0; i < top3.size(); i++) {
             Product p = top3.get(i);
-            System.out.println("  #" + (i + 1) + ": " + p.getName() + 
-                             " (Rating: " + String.format("%.2f", p.getAverageRating()) + ")");
+            System.out.println("  " + (i+1) + ". " + p.getName() + 
+                             " - Rating: " + String.format("%.2f", p.getAverageRating()) + 
+                             " (" + p.getReviews().size() + " reviews)");
         }
-        
-        System.out.println("\n2. Common High-Rated Products (Rating > 4) between Two Customers:");
-        ArrayList<Product> commonProducts = analyticsService.getCommonHighRatedProducts(201, 202);
-        System.out.println("Common products between customers 201 and 202: " + commonProducts.size());
-        for (int i = 0; i < commonProducts.size(); i++) {
-            System.out.println("  " + commonProducts.get(i).getName());
+        System.out.println();
+
+        // 8. Customers Sorted Alphabetically
+        System.out.println("8. CUSTOMERS SORTED ALPHABETICALLY (O(n))");
+        System.out.println("------------------------------------------");
+        ArrayList<Customer> sortedCustomers = customerService.getAllCustomersSorted();
+        System.out.println("✓ First 5 customers (alphabetically):");
+        for (int i = 0; i < Math.min(5, sortedCustomers.size()); i++) {
+            Customer c = sortedCustomers.get(i);
+            System.out.println("  - " + c.getName() + " (ID: " + c.getCustomerId() + ")");
         }
-        
-        System.out.println("\n3. Inventory Report:");
-        System.out.println(analyticsService.generateInventoryReport());
-        
+        System.out.println();
+
+        // 9. Customers Who Reviewed a Product (Sorted by Rating)
+        System.out.println("9. CUSTOMERS WHO REVIEWED PRODUCT (Sorted by Rating)");
+        System.out.println("-----------------------------------------------------");
+        ArrayList<AnalyticsService.CustomerReviewInfo> reviewers = 
+            analyticsService.getCustomersWhoReviewedProduct(101);
+        System.out.println("✓ Customers who reviewed product ID 101:");
+        for (int i = 0; i < Math.min(5, reviewers.size()); i++) {
+            AnalyticsService.CustomerReviewInfo info = reviewers.get(i);
+            System.out.println("  - " + info.getCustomerName() + " (Rating: " + 
+                             info.getRating() + "/5)");
+        }
+        System.out.println();
+
+        // 10. Common High-Rated Products Between Two Customers
+        System.out.println("10. COMMON HIGH-RATED PRODUCTS (Rating > 4)");
+        System.out.println("--------------------------------------------");
+        ArrayList<Product> commonProducts = analyticsService.getCommonHighRatedProducts(1, 2);
+        System.out.println("✓ Common high-rated products between Customer 1 and Customer 2:");
+        if (commonProducts.size() == 0) {
+            System.out.println("  No common high-rated products found.");
+        } else {
+            for (int i = 0; i < commonProducts.size(); i++) {
+                Product p = commonProducts.get(i);
+                System.out.println("  - " + p.getName() + " (Avg Rating: " + 
+                                 String.format("%.2f", p.getAverageRating()) + ")");
+            }
+        }
         System.out.println();
     }
-    
-    private static void printComplexityAnalysis() {
-        System.out.println("DATA STRUCTURE OPERATIONS:");
-        System.out.println("ArrayList:");
-        System.out.println("  - add(): O(1) amortized, O(n) worst case");
-        System.out.println("  - get(): O(1)");
-        System.out.println("  - remove(): O(n)");
-        System.out.println();
+
+    private static void printComplexityComparison() {
+        System.out.println("\n==============================================");
+        System.out.println("BIG-O COMPLEXITY COMPARISON");
+        System.out.println("==============================================\n");
         
-        System.out.println("LinkedList:");
-        System.out.println("  - addFirst/addLast(): O(1)");
-        System.out.println("  - removeFirst/removeLast(): O(1)");
-        System.out.println("  - get(): O(n)");
-        System.out.println("  - remove(element): O(n)");
-        System.out.println();
+        System.out.println("OPERATION                    | PHASE I (Linear) | PHASE II (BST)");
+        System.out.println("----------------------------------------------------------");
+        System.out.println("Add Product                  | O(1) amortized   | O(log n)");
+        System.out.println("Search Product by ID         | O(n)             | O(log n) ✓");
+        System.out.println("Update Product               | O(n)             | O(log n) ✓");
+        System.out.println("Remove Product               | O(n)             | O(log n) ✓");
+        System.out.println("Price Range Query            | O(n)             | O(log n + k) ✓");
+        System.out.println("----------------------------------------------------------");
+        System.out.println("Add Customer                 | O(1) amortized   | O(log n)");
+        System.out.println("Search Customer by ID        | O(n)             | O(log n) ✓");
+        System.out.println("Search Customer by Name      | O(n)             | O(log n) ✓");
+        System.out.println("Get Customers Sorted         | O(n log n)       | O(n) ✓");
+        System.out.println("----------------------------------------------------------");
+        System.out.println("Add Order                    | O(1) amortized   | O(log n)");
+        System.out.println("Search Order by ID           | O(n)             | O(log n) ✓");
+        System.out.println("Cancel Order                 | O(n)             | O(log n) ✓");
+        System.out.println("Orders Between Dates         | O(n)             | O(log n + k) ✓");
+        System.out.println("----------------------------------------------------------");
+        System.out.println("Get Customer Order History   | O(k * n)         | O(k * log n) ✓");
+        System.out.println("Get Customers Who Reviewed   | O(r * n)         | O(r * log c) ✓");
+        System.out.println("----------------------------------------------------------");
         
-        System.out.println("Stack:");
-        System.out.println("  - push(): O(1)");
-        System.out.println("  - pop(): O(1)");
-        System.out.println("  - peek(): O(1)");
-        System.out.println();
+        System.out.println("\nKEY IMPROVEMENTS:");
+        System.out.println("✓ Search operations: O(n) → O(log n)");
+        System.out.println("✓ Range queries: O(n) → O(log n + k)");
+        System.out.println("✓ Sorted traversals: O(n log n) → O(n)");
+        System.out.println("✓ Overall system performance significantly improved for large datasets");
         
-        System.out.println("Queue:");
-        System.out.println("  - enqueue(): O(1)");
-        System.out.println("  - dequeue(): O(1)");
-        System.out.println("  - peek(): O(1)");
-        System.out.println();
-        
-        System.out.println("Binary Search Tree:");
-        System.out.println("  - insert(): O(log n) average, O(n) worst");
-        System.out.println("  - search(): O(log n) average, O(n) worst");
-        System.out.println("  - delete(): O(log n) average, O(n) worst");
-        System.out.println();
-        
-        System.out.println("BUSINESS OPERATIONS:");
-        System.out.println("Product Service:");
-        System.out.println("  - addProduct(): O(log n)");
-        System.out.println("  - searchById(): O(n)");
-        System.out.println("  - searchByName(): O(n)");
-        System.out.println("  - getOutOfStockProducts(): O(n)");
-        System.out.println();
-        
-        System.out.println("Customer Service:");
-        System.out.println("  - registerCustomer(): O(1)");
-        System.out.println("  - placeOrder(): O(n) for validation");
-        System.out.println("  - getCustomerReviews(): O(n*r) where r = reviews per product");
-        System.out.println();
-        
-        System.out.println("Order Service:");
-        System.out.println("  - createOrder(): O(1)");
-        System.out.println("  - searchOrderById(): O(n)");
-        System.out.println("  - getOrdersBetweenDates(): O(n)");
-        System.out.println();
-        
-        System.out.println("Analytics Service:");
-        System.out.println("  - getTop3ProductsByRating(): O(n log n)");
-        System.out.println("  - getCommonHighRatedProducts(): O(n*r)");
-        System.out.println();
-        
-        System.out.println("SPACE COMPLEXITY:");
-        System.out.println("  - All data structures: O(n) where n is number of elements");
-        System.out.println("  - System total: O(P + C + O + R) where:");
-        System.out.println("    P = products, C = customers, O = orders, R = reviews");
+        System.out.println("\nLEGEND:");
+        System.out.println("n = total number of items");
+        System.out.println("k = number of results in range query");
+        System.out.println("r = number of reviews");
+        System.out.println("c = number of customers");
+        System.out.println("✓ = Performance improvement over Phase I");
     }
 }

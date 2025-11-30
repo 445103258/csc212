@@ -82,14 +82,14 @@ class CSVRepository:
 
     def write_products(self, products: List[Dict[str, Any]]):
         with open(self.products_file, 'w', newline='', encoding='utf-8') as f:
-            fieldnames = ['productId', 'name', 'price', 'stock', 'reviews', 'averageRating']
+            fieldnames = ['productId', 'name', 'price', 'stock']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(products)
 
     def write_customers(self, customers: List[Dict[str, Any]]):
         with open(self.customers_file, 'w', newline='', encoding='utf-8') as f:
-            fieldnames = ['customerId', 'name', 'email', 'orderIds']
+            fieldnames = ['customerId', 'name', 'email']
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
             writer.writerows(customers)

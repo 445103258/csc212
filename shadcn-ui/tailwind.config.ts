@@ -91,4 +91,3 @@ export default {
   },
   plugins: [tailwindcssAnimate, tailwindcssAspectRatio],
 } satisfies Config;
-
