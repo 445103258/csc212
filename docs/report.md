@@ -3,7 +3,7 @@
 
 **Course**: CSC 212  
 **Semester**: Fall 2025  
-**Date**: October 30, 2025
+**Date**: December 1st, 2025
 
 ---
 
@@ -22,15 +22,15 @@
 This project implements a comprehensive E-Commerce Inventory & Order Management System designed to help businesses manage product inventory, process customer orders, and gain insights through analytics. The system is built entirely with custom data structures (no Java Collections) and follows a layered architecture pattern.
 
 ### Key Features
-- ✅ Complete custom data structure implementations (ArrayList, LinkedList, Stack, Queue, BST)
-- ✅ Product inventory management with stock tracking
-- ✅ Customer registration and order placement
-- ✅ Order management with status tracking
-- ✅ Review system with rating aggregation
-- ✅ Analytics for top products and common preferences
-- ✅ CSV data import/export
-- ✅ RESTful API backend with Python/FastAPI
-- ✅ Comprehensive time and space complexity analysis
+- Complete custom data structure implementations (ArrayList, LinkedList, Stack, Queue, BST)
+- Product inventory management with stock tracking
+- Customer registration and order placement
+- Order management with status tracking
+- Review system with rating aggregation
+- Analytics for top products and common preferences
+- CSV data import/export
+- RESTful API backend with Python/FastAPI
+- Comprehensive time and space complexity analysis
 
 ---
 
@@ -257,33 +257,33 @@ The system includes sample CSV data:
 ### Functional Testing
 
 #### Product Operations
-✅ Add new product  
-✅ Search product by ID  
-✅ Search products by name  
-✅ Update product details  
-✅ Track out-of-stock products  
+Add new product  
+Search product by ID  
+Search products by name  
+Update product details  
+Track out-of-stock products  
 
 #### Customer Operations
-✅ Register new customer  
-✅ Place order with inventory validation  
-✅ View customer order history  
-✅ Extract customer reviews  
+Register new customer  
+Place order with inventory validation  
+View customer order history  
+Extract customer reviews  
 
 #### Order Operations
-✅ Create order  
-✅ Update order status  
-✅ Cancel order  
-✅ Get orders between dates  
+Create order  
+Update order status  
+Cancel order  
+Get orders between dates  
 
 #### Review Operations
-✅ Add review to product  
-✅ Edit existing review  
-✅ Calculate average rating  
+Add review to product  
+Edit existing review  
+Calculate average rating  
 
 #### Analytics
-✅ Get top 3 products by rating  
-✅ Find common high-rated products between customers  
-✅ Generate inventory reports  
+Get top 3 products by rating  
+Find common high-rated products between customers  
+Generate inventory reports  
 
 ### Edge Cases Handled
 
