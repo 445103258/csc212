@@ -204,13 +204,7 @@ See [docs/complexity-analysis.md](docs/complexity-analysis.md) for detailed anal
 - **[Complexity Analysis](docs/complexity-analysis.md)**: Time and space complexity
 - **[Project Report](docs/report.md)**: Complete project documentation
 
-## Academic Context
-
-**Course**: CSC 212 - Data Structures  
-**Semester**: Fall 2025  
-**Due Date**: December 1st, 2025
-
-## 🔧 Technology Stack
+## Technology Stack
 
 ### Backend
 - **Java 11+**: Core business logic
@@ -225,3 +219,9 @@ See [docs/complexity-analysis.md](docs/complexity-analysis.md) for detailed anal
 - **shadcn-ui**: Component library
 - **Tailwind CSS**: Styling
 - **Vite**: Build tool
+
+## Academic Context
+
+**Course**: CSC 212 - Data Structures  
+**Semester**: Fall 2025  
+**Due Date**: December 1st, 2025
