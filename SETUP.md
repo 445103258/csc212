@@ -304,7 +304,3 @@ For issues or questions:
 | Java Core | `java -cp bin com.ecommerce.Main` | N/A |
 | Python API | `uvicorn app.main:app --reload` | 8000 |
 | Frontend | `pnpm run dev` | 5173 |
-
----
-
-**Happy Coding! 🚀**
