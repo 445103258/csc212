@@ -12,14 +12,14 @@ echo ""
 
 # Check if Docker is installed
 if ! command -v docker &> /dev/null; then
-    echo "❌ Error: Docker is not installed"
+    echo "Error: Docker is not installed"
     echo "Please install Docker from: https://docs.docker.com/get-docker/"
     exit 1
 fi
 
 # Check if Docker Compose is installed
 if ! command -v docker-compose &> /dev/null; then
-    echo "❌ Error: Docker Compose is not installed"
+    echo "Error: Docker Compose is not installed"
     echo "Please install Docker Compose from: https://docs.docker.com/compose/install/"
     exit 1
 fi
