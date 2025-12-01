@@ -2,21 +2,21 @@ services:
   # 1. Python API Backend Service
   api:
     build:
-      context: .
-      dockerfile: python-api/Dockerfile
+      context: ./python-api
+      dockerfile: Dockerfile
     container_name: ecommerce-api
     ports:
       - "8000:8000"
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
-      - ./python-api/data:/app/data:ro
+      - ./python-api/data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 120s
     restart: unless-stopped
     networks:
       - ecommerce-network
@@ -24,14 +24,14 @@ services:
   # 2. React Frontend Dashboard Service
   frontend:
     build:
-      context: .
-      dockerfile: shadcn-ui/Dockerfile
+      context: ./shadcn-ui
+      dockerfile: Dockerfile
     container_name: ecommerce-frontend
     ports:
       - "80:80"
     depends_on:
       api:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
     networks:
       - ecommerce-network
@@ -45,7 +45,7 @@ services:
     depends_on:
       - api
     volumes:
-      - ./python-api/data:/app/python-api/data:ro
+      - ./python-api/data:/app/python-api/data
     restart: on-failure
     networks:
       - ecommerce-network
