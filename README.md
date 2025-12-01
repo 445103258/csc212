@@ -141,7 +141,7 @@ pnpm install
 pnpm run dev
 ```
 
-## 📊 API Endpoints
+## API Endpoints
 
 ### Products
 - `GET /api/v1/products` - Get all products
