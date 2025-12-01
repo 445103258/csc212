@@ -278,126 +278,6 @@ docker-compose restart api
 docker-compose logs api
 ```
 
-## Performance Optimization
-
-### 1. Build Cache
-
-Docker uses layer caching. To optimize:
-
-```dockerfile
-# Copy dependency files first
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install
-
-# Then copy source code
-COPY . .
-```
-
-### 2. Multi-stage Builds
-
-All Dockerfiles use multi-stage builds:
-- **Build stage**: Full toolchain (JDK, Node.js)
-- **Runtime stage**: Minimal runtime (JRE, Nginx)
-
-Result: 50-70% smaller images
-
-### 3. Resource Limits
-
-Add resource limits in `docker-compose.yml`:
-
-```yaml
-services:
-  api:
-    deploy:
-      resources:
-        limits:
-          cpus: '1'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-```
-
-## Production Deployment
-
-### 1. Environment Variables
-
-Create `.env` file:
-
-```env
-# API Configuration
-API_PORT=8000
-API_HOST=0.0.0.0
-
-# Frontend Configuration
-FRONTEND_PORT=80
-
-# Database (if using)
-DB_HOST=localhost
-DB_PORT=5432
-```
-
-Update `docker-compose.yml`:
-
-```yaml
-services:
-  api:
-    env_file:
-      - .env
-```
-
-### 2. HTTPS Configuration
-
-Add SSL certificates to nginx:
-
-```nginx
-server {
-    listen 443 ssl http2;
-    ssl_certificate /etc/nginx/ssl/cert.pem;
-    ssl_certificate_key /etc/nginx/ssl/key.pem;
-    
-    # ... rest of configuration
-}
-```
-
-### 3. Docker Swarm / Kubernetes
-
-For production orchestration, consider:
-- **Docker Swarm**: Built-in orchestration
-- **Kubernetes**: Enterprise-grade orchestration
-
-## Monitoring
-
-### 1. Container Stats
-
-```bash
-docker stats
-```
-
-### 2. Health Checks
-
-```bash
-# Check all health statuses
-docker-compose ps
-
-# Manual health check
-curl http://localhost:8000/health
-```
-
-### 3. Log Aggregation
-
-Use Docker logging drivers:
-
-```yaml
-services:
-  api:
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-```
-
 ## Cleanup
 
 ### Remove All Containers and Images
@@ -427,49 +307,13 @@ docker system prune -a --volumes -f
 
 **Warning**: This removes ALL Docker data, not just this project!
 
-## CI/CD Integration
-
-### GitHub Actions Example
-
-```yaml
-name: Build and Deploy
-
-on:
-  push:
-    branches: [ main ]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      
-      - name: Build Docker images
-        run: docker-compose build
-      
-      - name: Run tests
-        run: docker-compose up -d && sleep 10 && curl http://localhost:8000/health
-      
-      - name: Push to registry
-        run: |
-          docker tag ecommerce-api:latest registry.example.com/ecommerce-api:latest
-          docker push registry.example.com/ecommerce-api:latest
-```
-
-## Support
-
-For issues or questions:
-1. Check logs: `docker-compose logs -f`
-2. Review this guide's troubleshooting section
-3. Check Docker documentation: https://docs.docker.com
-
 ## Summary
 
 This Docker setup provides:
-- ✅ Isolated, reproducible environments
-- ✅ Easy deployment and scaling
-- ✅ Consistent development and production
-- ✅ Automated builds and health checks
-- ✅ Network isolation and security
+- Isolated, reproducible environments
+- Easy deployment and scaling
+- Consistent development accorss different machines
+- Automated builds and health checks
+- Network isolation and security
 
 All three services work together seamlessly in a containerized environment!
