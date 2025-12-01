@@ -123,14 +123,10 @@ public boolean removeProduct(int productId)
 - Space: O(log n)
 - **Improvement**: ✓ Significant speedup
 
-### 2.5 Price Range Query (NEW in Phase II)
+### 2.5 Price Range Query (Introduced in Phase-II)
 ```java
 public ArrayList<Product> getProductsByPriceRange(double minPrice, double maxPrice)
 ```
-**Phase I (ArrayList):**
-- Time: O(n) - must check every product
-- Space: O(k) where k = results
-
 **Phase II (BST):**
 - Time: O(log n + k) - navigate to range + collect results
 - Space: O(k)
@@ -169,7 +165,7 @@ public Customer searchCustomerById(int customerId)
 **Phase II:** O(log n) - BST search
 - **Improvement**: ✓ Significant speedup
 
-### 3.3 Search Customer by Name (NEW in Phase II)
+### 3.3 Search Customer by Name
 ```java
 public Customer searchCustomerByName(String name)
 ```
@@ -177,13 +173,11 @@ public Customer searchCustomerByName(String name)
 **Phase II:** O(log n) - BST search on name index
 - **Improvement**: ✓ New efficient operation
 
-### 3.4 Get All Customers Sorted (NEW in Phase II)
+### 3.4 Get All Customers Sorted (Introduced in Phase II)
 ```java
 public ArrayList<Customer> getAllCustomersSorted()
 ```
-**Phase I:** O(n log n) - must sort ArrayList
 **Phase II:** O(n) - inorder traversal of name BST
-- **Improvement**: ✓ Automatic sorting
 
 ### 3.5 Place Order
 ```java
@@ -229,7 +223,7 @@ public boolean cancelOrder(int orderId)
 **Phase II:** O(log n) - search + O(1) update
 - **Improvement**: ✓ Faster search
 
-### 4.4 Orders Between Dates (NEW in Phase II)
+### 4.4 Orders Between Dates
 ```java
 public ArrayList<Order> getOrdersBetweenDates(LocalDate startDate, LocalDate endDate)
 ```
@@ -257,11 +251,10 @@ public ArrayList<Product> getCommonHighRatedProducts(int customerId1, int custom
 **Phase II:** O(n * r)
 - **Note**: Same complexity for this operation
 
-### 5.3 Customers Who Reviewed Product (NEW in Phase II)
+### 5.3 Customers Who Reviewed Product (Introduced in Phase II)
 ```java
 public ArrayList<CustomerReviewInfo> getCustomersWhoReviewedProduct(int productId)
 ```
-**Phase I:** O(log n) product + O(r * n) customer lookups
 **Phase II:** O(log n) product + O(r * log c) customer lookups
 - **Improvement**: ✓ Faster customer lookups
 
