@@ -1,16 +1,17 @@
-# Python API Dockerfile
 FROM python:3.11-slim
 
-# Set working directory
 WORKDIR /app
 
 # Copy requirements and install dependencies
-COPY python-api/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code and data
-COPY python-api/app ./app
-COPY python-api/data ./data
+COPY app ./app
+COPY data ./data
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
 
 # Expose port
 EXPOSE 8000

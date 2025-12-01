@@ -9,7 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Package, Users, ShoppingCart, Star, TrendingUp, AlertCircle, Search, Edit, Trash2, X, Check, ChevronsUpDown, Calendar, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Package, Users, ShoppingCart, Star, TrendingUp, AlertCircle, Search, Edit, Trash2, X, Check, ChevronsUpDown, Calendar, Filter, DollarSign, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -55,6 +56,8 @@ interface Stats {
   reviews: number;
 }
 
+const ORDER_STATUSES = ['Pending', 'Shipped', 'Delivered', 'Canceled'];
+
 export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -72,7 +75,7 @@ export default function Dashboard() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editingReview, setEditingReview] = useState<{ review: Review; product: Product } | null>(null);
   const [searchProductId, setSearchProductId] = useState('');
-  const [searchOrderId, setSearchOrderId] = useState('');
+  const [searchOrderId, setSearchOrderId] = useState(0);
   const [selectedCustomerHistory, setSelectedCustomerHistory] = useState<Customer | null>(null);
   const [customerOrders, setCustomerOrders] = useState<Order[]>([]);
 
@@ -81,6 +84,7 @@ export default function Dashboard() {
   const [openOrderProductsCombobox, setOpenOrderProductsCombobox] = useState(false);
   const [openReviewProductCombobox, setOpenReviewProductCombobox] = useState(false);
   const [openReviewCustomerCombobox, setOpenReviewCustomerCombobox] = useState(false);
+  const [openOrderSearchCombobox, setOpenOrderSearchCombobox] = useState(false);
 
   const [dateRangeFilter, setDateRangeFilter] = useState({ startDate: '', endDate: '' });
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -92,16 +96,37 @@ export default function Dashboard() {
   const [openCustomer1Combobox, setOpenCustomer1Combobox] = useState(false);
   const [openCustomer2Combobox, setOpenCustomer2Combobox] = useState(false);
 
+  // New state for price range filter
+  const [priceRangeFilter, setPriceRangeFilter] = useState({ minPrice: '', maxPrice: '' });
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [showPriceFilterDialog, setShowPriceFilterDialog] = useState(false);
+
+  // New state for sorted customers
+  const [customersSorted, setCustomersSorted] = useState(false);
+
+  // New state for customers who reviewed a product
+  const [reviewedProductId, setReviewedProductId] = useState(0);
+  const [reviewingCustomers, setReviewingCustomers] = useState<Customer[]>([]);
+  const [showReviewingCustomersDialog, setShowReviewingCustomersDialog] = useState(false);
+  const [openReviewedProductCombobox, setOpenReviewedProductCombobox] = useState(false);
+
+  // New state for editing order status
+  const [editingOrderStatus, setEditingOrderStatus] = useState<{ orderId: number; status: string } | null>(null);
+
   useEffect(() => {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (sortCustomers: boolean = false) => {
     try {
       setLoading(true);
+      const customersUrl = sortCustomers 
+        ? `${API_BASE_URL}/customers?sorted=true`
+        : `${API_BASE_URL}/customers`;
+
       const [productsRes, customersRes, ordersRes, topProductsRes, statsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/products`),
-        fetch(`${API_BASE_URL}/customers`),
+        fetch(customersUrl),
         fetch(`${API_BASE_URL}/orders`),
         fetch(`${API_BASE_URL}/analytics/top-products?limit=3`),
         fetch(`${API_BASE_URL}/health`)
@@ -142,7 +167,7 @@ export default function Dashboard() {
       if (response.ok) {
         toast.success('Product added successfully!');
         setNewProduct({ name: '', price: '', stock: '' });
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to add product');
@@ -165,7 +190,7 @@ export default function Dashboard() {
       if (response.ok) {
         toast.success('Product updated successfully!');
         setEditingProduct(null);
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to update product');
@@ -181,7 +206,7 @@ export default function Dashboard() {
       
       if (response.ok) {
         toast.success('Product deleted successfully!');
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to delete product');
@@ -197,6 +222,71 @@ export default function Dashboard() {
     }
   };
 
+  const handleFilterProductsByPrice = async () => {
+    if (!priceRangeFilter.minPrice || !priceRangeFilter.maxPrice) {
+      toast.error('Please enter both minimum and maximum prices');
+      return;
+    }
+
+    const minPrice = parseFloat(priceRangeFilter.minPrice);
+    const maxPrice = parseFloat(priceRangeFilter.maxPrice);
+
+    if (minPrice > maxPrice) {
+      toast.error('Minimum price must be less than maximum price');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/products?min_price=${minPrice}&max_price=${maxPrice}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFilteredProducts(data);
+        setShowPriceFilterDialog(true);
+        toast.success(`Found ${data.length} product(s) in price range $${minPrice} - $${maxPrice}`);
+      } else {
+        toast.error('Failed to filter products by price');
+      }
+    } catch (error) {
+      toast.error('Failed to filter products by price');
+    }
+  };
+
+  const handleToggleSortCustomers = async () => {
+    const newSortState = !customersSorted;
+    setCustomersSorted(newSortState);
+    await fetchData(newSortState);
+    toast.success(newSortState ? 'Customers sorted alphabetically' : 'Customers in original order');
+  };
+
+  const handleFindCustomersWhoReviewed = async () => {
+    if (!reviewedProductId) {
+      toast.error('Please select a product');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/analytics/customers-who-reviewed/${reviewedProductId}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setReviewingCustomers(data);
+        setShowReviewingCustomersDialog(true);
+        
+        const product = products.find(p => p.productId === reviewedProductId);
+        toast.success(`Found ${data.length} customer(s) who reviewed ${product?.name}`);
+      } else {
+        toast.error('Failed to fetch customers');
+      }
+    } catch (error) {
+      toast.error('Failed to fetch customers');
+    }
+  };
+
   const handleAddCustomer = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/customers`, {
@@ -208,7 +298,7 @@ export default function Dashboard() {
       if (response.ok) {
         toast.success('Customer registered successfully!');
         setNewCustomer({ name: '', email: '' });
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to register customer');
@@ -240,7 +330,7 @@ export default function Dashboard() {
       if (response.ok) {
         toast.success('Order placed successfully!');
         setNewOrder({ customerId: 0, productIds: [] });
-        fetchData();
+        fetchData(customersSorted);
       } else {
         toast.error('Failed to place order. Check customer ID and product availability.');
       }
@@ -258,17 +348,43 @@ export default function Dashboard() {
       
       if (response.ok) {
         toast.success('Order canceled successfully!');
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to cancel order');
     }
   };
 
+  const handleUpdateOrderStatus = async () => {
+    if (!editingOrderStatus) return;
+    try {
+      const response = await fetch(`${API_BASE_URL}/orders/${editingOrderStatus.orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: editingOrderStatus.status })
+      });
+      
+      if (response.ok) {
+        toast.success('Order status updated successfully!');
+        setEditingOrderStatus(null);
+        fetchData(customersSorted);
+      } else {
+        toast.error('Failed to update order status');
+      }
+    } catch (error) {
+      toast.error('Failed to update order status');
+    }
+  };
+
   const handleSearchOrder = () => {
-    const order = orders.find(o => o.orderId === parseInt(searchOrderId));
+    if (!searchOrderId) {
+      toast.error('Please select an order');
+      return;
+    }
+    const order = orders.find(o => o.orderId === searchOrderId);
     if (order) {
-      toast.success(`Found Order #${order.orderId} - Customer: ${order.customerId} - Total: $${order.totalPrice.toFixed(2)}`);
+      const customer = customers.find(c => c.customerId === order.customerId);
+      toast.success(`Found Order #${order.orderId} - Customer: ${customer?.name || order.customerId} - Total: $${order.totalPrice.toFixed(2)} - Status: ${order.status}`);
     } else {
       toast.error('Order not found');
     }
@@ -311,7 +427,7 @@ export default function Dashboard() {
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/analytics/common-high-rated-products?customer1_id=${commonProductsFilter.customer1Id}&customer2_id=${commonProductsFilter.customer2Id}`
+        `${API_BASE_URL}/analytics/common-products?customer_id1=${commonProductsFilter.customer1Id}&customer_id2=${commonProductsFilter.customer2Id}`
       );
       
       if (response.ok) {
@@ -347,7 +463,7 @@ export default function Dashboard() {
       if (response.ok) {
         toast.success('Review added successfully!');
         setNewReview({ productId: 0, customerId: 0, rating: 5, comment: '' });
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to add review');
@@ -371,7 +487,7 @@ export default function Dashboard() {
       if (response.ok) {
         toast.success('Review updated successfully!');
         setEditingReview(null);
-        fetchData();
+        fetchData(customersSorted);
       }
     } catch (error) {
       toast.error('Failed to update review');
@@ -411,7 +527,7 @@ export default function Dashboard() {
             </h1>
             <p className="text-slate-600 mt-2">Inventory & Order Management System</p>
           </div>
-          <Button onClick={fetchData} variant="outline">
+          <Button onClick={() => fetchData(customersSorted)} variant="outline">
             Refresh Data
           </Button>
         </div>
@@ -483,7 +599,45 @@ export default function Dashboard() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="border-t-4 border-t-emerald-500">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Filter Products by Price Range
+              </CardTitle>
+              <CardDescription>Find products within a specific price range</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Min Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={priceRangeFilter.minPrice}
+                    onChange={(e) => setPriceRangeFilter({ ...priceRangeFilter, minPrice: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label>Max Price ($)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={priceRangeFilter.maxPrice}
+                    onChange={(e) => setPriceRangeFilter({ ...priceRangeFilter, maxPrice: e.target.value })}
+                  />
+                </div>
+              </div>
+              <Button onClick={handleFilterProductsByPrice} className="w-full">
+                <Filter className="mr-2 h-4 w-4" />
+                Filter Products
+              </Button>
+            </CardContent>
+          </Card>
+
           <Card className="border-t-4 border-t-purple-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -521,12 +675,76 @@ export default function Dashboard() {
           <Card className="border-t-4 border-t-indigo-500">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                Common High-Rated Products
+                <Users className="h-5 w-5" />
+                Customers Who Reviewed Product
               </CardTitle>
-              <CardDescription>Find products reviewed by two customers with rating &gt; 4</CardDescription>
+              <CardDescription>Find all customers who reviewed a specific product</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <Label>Select Product</Label>
+                <Popover open={openReviewedProductCombobox} onOpenChange={setOpenReviewedProductCombobox}>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      {reviewedProductId ? 
+                        products.find(p => p.productId === reviewedProductId)?.name || "Select product..." 
+                        : "Select product..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search product..." />
+                      <CommandList>
+                        <CommandEmpty>No product found.</CommandEmpty>
+                        <CommandGroup>
+                          {products.map((product) => (
+                            <CommandItem
+                              key={product.productId}
+                              value={`${product.productId} ${product.name}`}
+                              onSelect={() => {
+                                setReviewedProductId(product.productId);
+                                setOpenReviewedProductCombobox(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  reviewedProductId === product.productId ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              <div>
+                                <div className="font-medium">{product.name}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  ID: {product.productId} | {product.reviews.length} reviews
+                                </div>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button onClick={handleFindCustomersWhoReviewed} className="w-full" disabled={!reviewedProductId}>
+                <Search className="mr-2 h-4 w-4" />
+                Find Customers
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="border-t-4 border-t-indigo-500">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="h-5 w-5" />
+              Common High-Rated Products
+            </CardTitle>
+            <CardDescription>Find products reviewed by two customers with rating &gt; 4</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Customer 1</Label>
                 <Popover open={openCustomer1Combobox} onOpenChange={setOpenCustomer1Combobox}>
@@ -615,13 +833,13 @@ export default function Dashboard() {
                   </PopoverContent>
                 </Popover>
               </div>
-              <Button onClick={handleFindCommonProducts} className="w-full">
-                <Search className="mr-2 h-4 w-4" />
-                Find Common Products
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            <Button onClick={handleFindCommonProducts} className="w-full">
+              <Search className="mr-2 h-4 w-4" />
+              Find Common Products
+            </Button>
+          </CardContent>
+        </Card>
 
         <Card className="border-t-4 border-t-indigo-500">
           <CardHeader>
@@ -823,8 +1041,21 @@ export default function Dashboard() {
           <TabsContent value="customers" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Customer Management</CardTitle>
-                <CardDescription>View and manage customers</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Customer Management</CardTitle>
+                    <CardDescription>View and manage customers</CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleToggleSortCustomers}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowUpDown className="h-4 w-4" />
+                    {customersSorted ? 'Show Original Order' : 'Sort Alphabetically'}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <Dialog>
@@ -1031,12 +1262,50 @@ export default function Dashboard() {
                   </Dialog>
 
                   <div className="flex gap-2 flex-1">
-                    <Input
-                      type="number"
-                      placeholder="Search by Order ID..."
-                      value={searchOrderId}
-                      onChange={(e) => setSearchOrderId(e.target.value)}
-                    />
+                    <Popover open={openOrderSearchCombobox} onOpenChange={setOpenOrderSearchCombobox}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="flex-1 justify-between">
+                          {searchOrderId ? `Order #${searchOrderId}` : "Search by Order ID..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search order..." />
+                          <CommandList>
+                            <CommandEmpty>No order found.</CommandEmpty>
+                            <CommandGroup>
+                              {orders.map((order) => {
+                                const customer = customers.find(c => c.customerId === order.customerId);
+                                return (
+                                  <CommandItem
+                                    key={order.orderId}
+                                    value={`${order.orderId} ${customer?.name || ''}`}
+                                    onSelect={() => {
+                                      setSearchOrderId(order.orderId);
+                                      setOpenOrderSearchCombobox(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        searchOrderId === order.orderId ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    <div className="flex-1">
+                                      <div className="font-medium">Order #{order.orderId}</div>
+                                      <div className="text-sm text-muted-foreground">
+                                        {customer?.name || `Customer #${order.customerId}`} | ${order.totalPrice.toFixed(2)} | {order.status}
+                                      </div>
+                                    </div>
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <Button onClick={handleSearchOrder} variant="secondary">
                       <Search className="h-4 w-4" />
                     </Button>
@@ -1067,15 +1336,24 @@ export default function Dashboard() {
                           <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                           <TableCell>{getStatusBadge(order.status)}</TableCell>
                           <TableCell>
-                            {order.status === 'Pending' && (
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                variant="destructive"
-                                onClick={() => handleCancelOrder(order.orderId)}
+                                variant="outline"
+                                onClick={() => setEditingOrderStatus({ orderId: order.orderId, status: order.status })}
                               >
-                                Cancel
+                                <Edit className="h-4 w-4" />
                               </Button>
-                            )}
+                              {order.status === 'Pending' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleCancelOrder(order.orderId)}
+                                >
+                                  Cancel
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       );
@@ -1367,6 +1645,38 @@ export default function Dashboard() {
         </Dialog>
       )}
 
+      {editingOrderStatus && (
+        <Dialog open={!!editingOrderStatus} onOpenChange={() => setEditingOrderStatus(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Update Order Status</DialogTitle>
+              <DialogDescription>Change the status of Order #{editingOrderStatus.orderId}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Status</Label>
+                <Select
+                  value={editingOrderStatus.status}
+                  onValueChange={(value) => setEditingOrderStatus({ ...editingOrderStatus, status: value })}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORDER_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        {status}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleUpdateOrderStatus} className="w-full">Update Status</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {selectedCustomerHistory && (
         <Dialog open={!!selectedCustomerHistory} onOpenChange={() => setSelectedCustomerHistory(null)}>
           <DialogContent className="max-w-3xl">
@@ -1396,6 +1706,52 @@ export default function Dashboard() {
                         <TableCell>${order.totalPrice.toFixed(2)}</TableCell>
                         <TableCell>{new Date(order.orderDate).toLocaleDateString()}</TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showPriceFilterDialog && (
+        <Dialog open={showPriceFilterDialog} onOpenChange={setShowPriceFilterDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Products in Price Range ${priceRangeFilter.minPrice} - ${priceRangeFilter.maxPrice}</DialogTitle>
+              <DialogDescription>Found {filteredProducts.length} product(s) in this price range</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {filteredProducts.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No products found in this price range</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Stock</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Reviews</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredProducts.map((product) => (
+                      <TableRow key={product.productId}>
+                        <TableCell>{product.productId}</TableCell>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell>${product.price.toFixed(2)}</TableCell>
+                        <TableCell>{product.stock}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            {product.averageRating.toFixed(2)}
+                          </div>
+                        </TableCell>
+                        <TableCell>{product.reviews.length}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1442,6 +1798,43 @@ export default function Dashboard() {
                         </TableRow>
                       );
                     })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {showReviewingCustomersDialog && (
+        <Dialog open={showReviewingCustomersDialog} onOpenChange={setShowReviewingCustomersDialog}>
+          <DialogContent className="max-w-4xl">
+            <DialogHeader>
+              <DialogTitle>Customers Who Reviewed {products.find(p => p.productId === reviewedProductId)?.name}</DialogTitle>
+              <DialogDescription>Found {reviewingCustomers.length} customer(s) who reviewed this product</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {reviewingCustomers.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No customers found who reviewed this product</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Total Orders</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reviewingCustomers.map((customer) => (
+                      <TableRow key={customer.customerId}>
+                        <TableCell>{customer.customerId}</TableCell>
+                        <TableCell className="font-medium">{customer.name}</TableCell>
+                        <TableCell>{customer.email}</TableCell>
+                        <TableCell>{customer.orderIds.length}</TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               )}

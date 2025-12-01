@@ -1,6 +1,2 @@
-productId,name,price,stock
-101,Laptop Pro 15,1499.99,20
-102,Wireless Mouse,29.99,50
-103,Mechanical Keyboard,89.99,30
-104,USB-C Hub,49.99,0
-105,Laptop Stand,39.99,15
+productId,name,price,stock,averageRating,reviews
+101,test,69.0,68,0.0,[]

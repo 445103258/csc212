@@ -1,5 +1,6 @@
-orderId,customerId,productIds,totalPrice,orderDate,status
-301,201,"101;102",1529.98,2025-01-12,Pending
-302,202,"103;105",129.98,2025-01-15,Shipped
-303,203,"102;103;105",159.97,2025-01-18,Delivered
-304,201,"105",39.99,2025-01-20,Pending
+orderId,customerId,productIds,totalPrice,orderDate,status,customerId
+301,201,"""101;102""",1529.98,2025-01-12,Shipped,201
+302,202,"""103;105""",129.98,2025-01-15,Shipped,202
+303,203,"""102;103;105""",159.97,2025-01-18,Delivered,203
+304,201,"""105""",39.99,2025-01-20,Canceled,201
+305,202,"""101""",69.0,2025-12-01,Pending,202

@@ -59,7 +59,15 @@ class ECommerceService:
                 results.append(Product(**p))
         return results
 
-    def create_product(self, product_create: ProductCreate) -> Product:
+    def get_products_by_price_range(self, min_price: float, max_price: float) -> List[Product]:
+        """Get products within a price range"""
+        results = []
+        for p in self.products_data:
+            if min_price <= p['price'] <= max_price:
+                results.append(Product(**p))
+        return results
+
+    def add_product(self, product_create: ProductCreate) -> Product:
         new_id = max([p['productId'] for p in self.products_data], default=100) + 1
         new_product = {
             'productId': new_id,
@@ -97,13 +105,18 @@ class ECommerceService:
     def get_all_customers(self) -> List[Customer]:
         return [Customer(**c) for c in self.customers_data]
 
+    def get_all_customers_sorted(self) -> List[Customer]:
+        """Get all customers sorted alphabetically by name"""
+        sorted_customers = sorted(self.customers_data, key=lambda c: c['name'].lower())
+        return [Customer(**c) for c in sorted_customers]
+
     def get_customer_by_id(self, customer_id: int) -> Optional[Customer]:
         for c in self.customers_data:
             if c['customerId'] == customer_id:
                 return Customer(**c)
         return None
 
-    def create_customer(self, customer_create: CustomerCreate) -> Customer:
+    def register_customer(self, customer_create: CustomerCreate) -> Customer:
         new_id = max([c['customerId'] for c in self.customers_data], default=200) + 1
         new_customer = {
             'customerId': new_id,
@@ -115,7 +128,24 @@ class ECommerceService:
         self.repository.write_customers(self.customers_data)
         return Customer(**new_customer)
 
-    def get_customer_orders(self, customer_id: int) -> List[Order]:
+    def update_customer(self, customer_id: int, customer_create: CustomerCreate) -> Optional[Customer]:
+        for c in self.customers_data:
+            if c['customerId'] == customer_id:
+                c['name'] = customer_create.name
+                c['email'] = customer_create.email
+                self.repository.write_customers(self.customers_data)
+                return Customer(**c)
+        return None
+
+    def delete_customer(self, customer_id: int) -> bool:
+        for i, c in enumerate(self.customers_data):
+            if c['customerId'] == customer_id:
+                self.customers_data.pop(i)
+                self.repository.write_customers(self.customers_data)
+                return True
+        return False
+
+    def get_customer_order_history(self, customer_id: int) -> List[Order]:
         orders = []
         for o in self.orders_data:
             if o['customerId'] == customer_id:
@@ -138,23 +168,25 @@ class ECommerceService:
                 return Order(**o)
         return None
 
-    def create_order(self, order_create: OrderCreate) -> Optional[Order]:
-        customer = self.get_customer_by_id(order_create.customer_id)
+    def create_order(self, order_create: OrderCreate) -> Order:
+        customer = self.get_customer_by_id(order_create.customerId)
         if not customer:
-            return None
+            raise ValueError("Customer not found")
 
         total_price = 0.0
-        for pid in order_create.product_ids:
+        for pid in order_create.productIds:
             product = self.get_product_by_id(pid)
-            if not product or product.stock < 1:
-                return None
+            if not product:
+                raise ValueError(f"Product {pid} not found")
+            if product.stock < 1:
+                raise ValueError(f"Product {product.name} is out of stock")
             total_price += product.price
 
         new_id = max([o['orderId'] for o in self.orders_data], default=300) + 1
         new_order = {
             'orderId': new_id,
-            'customerId': order_create.customer_id,
-            'productIds': order_create.product_ids,
+            'customerId': order_create.customerId,
+            'productIds': order_create.productIds,
             'totalPrice': total_price,
             'orderDate': date.today().isoformat(),
             'status': OrderStatus.PENDING.value
@@ -163,29 +195,31 @@ class ECommerceService:
         self.orders_data.append(new_order)
         self.repository.write_orders(self.orders_data)
 
-        for pid in order_create.product_ids:
+        # Update product stock
+        for pid in order_create.productIds:
             for p in self.products_data:
                 if p['productId'] == pid:
                     p['stock'] -= 1
         self.repository.write_products(self.products_data)
 
+        # Update customer order IDs
         for c in self.customers_data:
-            if c['customerId'] == order_create.customer_id:
+            if c['customerId'] == order_create.customerId:
                 c['orderIds'].append(new_id)
         self.repository.write_customers(self.customers_data)
 
         return Order(**new_order)
 
-    def update_order_status(self, order_id: int, status: OrderStatus) -> Optional[Order]:
+    def update_order_status(self, order_id: int, status: str) -> Optional[Order]:
         for o in self.orders_data:
             if o['orderId'] == order_id:
-                o['status'] = status.value
+                o['status'] = status
                 self.repository.write_orders(self.orders_data)
                 return Order(**o)
         return None
 
     def cancel_order(self, order_id: int) -> Optional[Order]:
-        return self.update_order_status(order_id, OrderStatus.CANCELED)
+        return self.update_order_status(order_id, OrderStatus.CANCELED.value)
 
     def get_orders_between_dates(self, start_date: date, end_date: date) -> List[Order]:
         orders = []
@@ -195,18 +229,20 @@ class ECommerceService:
                 orders.append(Order(**o))
         return orders
 
-    def create_review(self, review_create: ReviewCreate) -> Optional[Review]:
-        product = self.get_product_by_id(review_create.product_id)
-        customer = self.get_customer_by_id(review_create.customer_id)
+    def add_review(self, review_create: ReviewCreate) -> Review:
+        product = self.get_product_by_id(review_create.productId)
+        customer = self.get_customer_by_id(review_create.customerId)
         
-        if not product or not customer:
-            return None
+        if not product:
+            raise ValueError("Product not found")
+        if not customer:
+            raise ValueError("Customer not found")
 
         new_id = max([r['reviewId'] for r in self.reviews_data], default=400) + 1
         new_review = {
             'reviewId': new_id,
-            'productId': review_create.product_id,
-            'customerId': review_create.customer_id,
+            'productId': review_create.productId,
+            'customerId': review_create.customerId,
             'rating': review_create.rating,
             'comment': review_create.comment
         }
@@ -214,6 +250,7 @@ class ECommerceService:
         self.reviews_data.append(new_review)
         self.repository.write_reviews(self.reviews_data)
         
+        # Reload data to update average ratings
         self._link_reviews_to_products()
         
         return Review(**new_review)
@@ -224,6 +261,24 @@ class ECommerceService:
                                 key=lambda p: p['averageRating'], 
                                 reverse=True)
         return [Product(**p) for p in sorted_products[:limit]]
+
+    def get_customers_who_reviewed_product(self, product_id: int) -> List[Customer]:
+        """Get customers who reviewed a specific product"""
+        customer_ids = set()
+        
+        # Find all unique customer IDs who reviewed this product
+        for review in self.reviews_data:
+            if review['productId'] == product_id:
+                customer_ids.add(review['customerId'])
+        
+        # Return full Customer objects for these customers
+        customers = []
+        for customer_id in customer_ids:
+            customer = self.get_customer_by_id(customer_id)
+            if customer:
+                customers.append(customer)
+        
+        return customers
 
     def get_common_high_rated_products(self, customer_id1: int, customer_id2: int) -> List[Product]:
         common_products = []
